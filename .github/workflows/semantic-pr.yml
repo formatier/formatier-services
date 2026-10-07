@@ -27,9 +27,7 @@ jobs:
             perf
             ci
             ops
-            build
             docs
-            style
             rollback
             refactor
             test
