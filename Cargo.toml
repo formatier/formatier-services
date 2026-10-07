@@ -1,0 +1,58 @@
+[workspace]
+resolver = "3"
+
+members = [
+    "adaptors/api-gateway",
+    "adaptors/formatine-operator",
+    "adaptors/formatine-worker",
+    "adaptors/integrations-gateway",
+    "adaptors/mail-server",
+    "adaptors/monitor-server",
+
+    "forma-core",
+    "forma-proc-macro",
+    "forma-schema",
+
+    "services/auth-service",
+    "services/forum-service",
+    "services/interspace-service",
+    "services/key-stone-service",
+    "services/notification-service",
+    "services/payment-service",
+    "services/plugin-service",
+]
+
+[workspace.dependencies]
+rustls = "0.23.45"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+thiserror = "2.0.21"
+uuid = { version = "1.27.0", features = ["v4", "serde"] }
+async-trait = "0.1.92"
+sha2 = "0.11.0"
+chrono = "0.4.45"
+mongodb = { version = "3.9.1", features = ["bson-3"] }
+futures = "0.3.34"
+redis = { version = "1.7.1", features = [
+    "bb8",
+    "tokio-comp",
+    "connection-manager",
+    "cluster-async",
+] }
+axum = { version = "0.8.9", features = ["macros", "http2"] }
+axum-extra = { version = "0.12.6", features = ["cookie"] }
+tokio = { version = "1.53.2", features = ["full"] }
+rayon = "1.12.0"
+reqwest = { version = "0.13.5", features = ["json"] }
+
+forma-core = { path = "./forma-core" }
+forma-schema = { path = "./forma-schema" }
+forma-proc-macro = { path = "./forma-proc-macro" }
+
+[profile.release]
+debug = false
+strip = "symbols"
+lto = true
+codegen-units = 1
+panic = "abort"
+opt-level = 3

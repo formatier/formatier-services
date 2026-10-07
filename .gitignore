@@ -1,0 +1,9 @@
+/target
+
+/deployment/k8s/secrets
+/deployment/charts/*/charts
+
+.DS_Store
+.fleet
+.idea
+.vscode
