@@ -2,5 +2,7 @@
 name = "forma-core"
 version = "0.1.0"
 edition = "2024"
+description = "Formatier API core"
+license = "Apache-2.0"
 
 [dependencies]
