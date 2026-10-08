@@ -1,0 +1,25 @@
+f7r-core:
+  commonDeployment:
+    name: api-gateway
+    namespace: f7r-api-gateway
+    replicas: 20
+    labels:
+      adaptor: api-gateway
+    availability:
+      minReadySeconds: 10
+      maxSurge: 25%
+      maxUnavailable: 25%
+    resource:
+      minCpu: 100m
+      minMemory: 256Mi
+      maxCpu: 250m
+      maxMemory: 512Mi
+  commonService:
+    name: api-gateway
+    namespace: f7r-api-gateway
+    labels:
+      adaptor: api-gateway
+  port:
+    serverPort: 3000
+    exposePort: 3000
+    protocol: TCP

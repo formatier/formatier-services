@@ -6,56 +6,56 @@ build:
     useDockerCLI: false
     useBuildkit: true
   artifacts:
-    - image: ghcr.io/formatier/api-gateway
+    - image: api-gateway
       context: .
       docker:
         dockerfile: ./adaptors/api-gateway/Dockerfile
-    - image: ghcr.io/formatier/formatine-operator
+    - image: formatine-operator
       context: .
       docker:
         dockerfile: ./adaptors/formatine-operator/Dockerfile
-    - image: ghcr.io/formatier/formatine-worker
+    - image: formatine-worker
       context: .
       docker:
         dockerfile: ./adaptors/formatine-worker/Dockerfile
-    - image: ghcr.io/formatier/integrations-gateway
+    - image: integrations-gateway
       context: .
       docker:
         dockerfile: ./adaptors/integrations-gateway/Dockerfile
-    - image: ghcr.io/formatier/mail-server
+    - image: mail-server
       context: .
       docker:
         dockerfile: ./adaptors/mail-server/Dockerfile
-    - image: ghcr.io/formatier/monitor-server
+    - image: monitor-server
       context: .
       docker:
         dockerfile: ./adaptors/monitor-server/Dockerfile
-        
-    - image: ghcr.io/formatier/auth-service
+
+    - image: auth-service
       context: .
       docker:
         dockerfile: ./services/auth-service/Dockerfile
-    - image: ghcr.io/formatier/forum-service
+    - image: forum-service
       context: .
       docker:
         dockerfile: ./services/forum-service/Dockerfile
-    - image: ghcr.io/formatier/interspace-service
+    - image: interspace-service
       context: .
       docker:
         dockerfile: ./services/interspace-service/Dockerfile
-    - image: ghcr.io/formatier/key-stone-service
+    - image: key-stone-service
       context: .
       docker:
         dockerfile: ./services/key-stone-service/Dockerfile
-    - image: ghcr.io/formatier/notification-service
+    - image: notification-service
       context: .
       docker:
         dockerfile: ./services/notification-service/Dockerfile
-    - image: ghcr.io/formatier/payment-service
+    - image: payment-service
       context: .
       docker:
         dockerfile: ./services/payment-service/Dockerfile
-    - image: ghcr.io/formatier/plugin-service
+    - image: plugin-service
       context: .
       docker:
         dockerfile: ./services/plugin-service/Dockerfile

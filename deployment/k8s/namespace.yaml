@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "f7r-api-gateway"
+  labels:
+    service: formatier
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "f7r-formatine-operator"
+  labels:
+    service: formatier
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "f7r-formatine-worker"
+  labels:
+    service: formatier
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "f7r-integrations-gateway"
+  labels:
+    service: formatier
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "f7r-mail-server"
+  labels:
+    service: formatier
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "f7r-monitor-server"
+  labels:
+    service: formatier
+  
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "f7r-auth-service"
+  labels:
+    service: formatier
+
