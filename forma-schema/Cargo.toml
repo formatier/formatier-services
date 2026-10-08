@@ -6,3 +6,11 @@ description = "Formatier API schema"
 license = "Apache-2.0"
 
 [dependencies]
+woothee = "0.13.0"
+
+forma-core = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+mongodb = { workspace = true }
+uuid = { workspace = true }
+reqwest = { workspace = true }

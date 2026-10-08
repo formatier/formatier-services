@@ -5,4 +5,9 @@ edition = "2024"
 description = "Formatier API proc macro"
 license = "Apache-2.0"
 
+[lib]
+proc-macro = true
+
 [dependencies]
+quote = "1.0.47"
+syn = "3.0.3"

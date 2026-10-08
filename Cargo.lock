@@ -100,6 +100,13 @@ checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 [[package]]
 name = "auth-service"
 version = "0.1.0"
+dependencies = [
+ "axum",
+ "forma-core",
+ "forma-schema",
+ "serde",
+ "tokio",
+]
 
 [[package]]
 name = "autocfg"
@@ -878,10 +885,23 @@ dependencies = [
 [[package]]
 name = "forma-proc-macro"
 version = "0.1.1"
+dependencies = [
+ "quote",
+ "syn 3.0.6",
+]
 
 [[package]]
 name = "forma-schema"
 version = "0.1.0"
+dependencies = [
+ "forma-core",
+ "mongodb",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "uuid",
+ "woothee",
+]
 
 [[package]]
 name = "formatine-operator"
@@ -889,6 +909,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "forma-core",
+ "forma-schema",
  "serde",
  "tokio",
 ]
@@ -896,10 +917,24 @@ dependencies = [
 [[package]]
 name = "formatine-worker"
 version = "0.1.0"
+dependencies = [
+ "axum",
+ "forma-core",
+ "forma-schema",
+ "serde",
+ "tokio",
+]
 
 [[package]]
 name = "forum-service"
 version = "0.1.0"
+dependencies = [
+ "axum",
+ "forma-core",
+ "forma-schema",
+ "serde",
+ "tokio",
+]
 
 [[package]]
 name = "fs_extra"
@@ -1411,10 +1446,24 @@ dependencies = [
 [[package]]
 name = "integrations-gateway"
 version = "0.1.0"
+dependencies = [
+ "axum",
+ "forma-core",
+ "forma-schema",
+ "serde",
+ "tokio",
+]
 
 [[package]]
 name = "interspace-service"
 version = "0.1.0"
+dependencies = [
+ "axum",
+ "forma-core",
+ "forma-schema",
+ "serde",
+ "tokio",
+]
 
 [[package]]
 name = "ipconfig"
@@ -1517,6 +1566,13 @@ dependencies = [
 [[package]]
 name = "key-stone-service"
 version = "0.1.0"
+dependencies = [
+ "axum",
+ "forma-core",
+ "forma-schema",
+ "serde",
+ "tokio",
+]
 
 [[package]]
 name = "lazy_static"
@@ -1608,6 +1664,13 @@ dependencies = [
 [[package]]
 name = "mail-server"
 version = "0.1.0"
+dependencies = [
+ "axum",
+ "forma-core",
+ "forma-schema",
+ "serde",
+ "tokio",
+]
 
 [[package]]
 name = "matchit"
@@ -1746,6 +1809,13 @@ dependencies = [
 [[package]]
 name = "monitor-server"
 version = "0.1.0"
+dependencies = [
+ "axum",
+ "forma-core",
+ "forma-schema",
+ "serde",
+ "tokio",
+]
 
 [[package]]
 name = "multiversion_no_op"
@@ -1762,6 +1832,13 @@ checksum = "27b02d87554356db9e9a873add8782d4ea6e3e58ea071a9adb9a2e8ddb884a8b"
 [[package]]
 name = "notification-service"
 version = "0.1.0"
+dependencies = [
+ "axum",
+ "forma-core",
+ "forma-schema",
+ "serde",
+ "tokio",
+]
 
 [[package]]
 name = "num-bigint"
@@ -1845,6 +1922,13 @@ dependencies = [
 [[package]]
 name = "payment-service"
 version = "0.1.0"
+dependencies = [
+ "axum",
+ "forma-core",
+ "forma-schema",
+ "serde",
+ "tokio",
+]
 
 [[package]]
 name = "pbkdf2"
@@ -1876,6 +1960,13 @@ checksum = "f6b464fbc74e149a392436b17d523f769e057cb6877f6a5c4618bc6f11800548"
 [[package]]
 name = "plugin-service"
 version = "0.1.0"
+dependencies = [
+ "axum",
+ "forma-core",
+ "forma-schema",
+ "serde",
+ "tokio",
+]
 
 [[package]]
 name = "portable-atomic"
