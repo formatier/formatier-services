@@ -1,0 +1,138 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+build:
+  local:
+    push: true
+    useDockerCLI: false
+    useBuildkit: true
+  artifacts:
+    - image: ghcr.io/formatier/api-gateway
+      context: .
+      docker:
+        dockerfile: ./adaptors/api-gateway/Dockerfile
+    - image: ghcr.io/formatier/formatine-operator
+      context: .
+      docker:
+        dockerfile: ./adaptors/formatine-operator/Dockerfile
+    - image: ghcr.io/formatier/formatine-worker
+      context: .
+      docker:
+        dockerfile: ./adaptors/formatine-worker/Dockerfile
+    - image: ghcr.io/formatier/integrations-gateway
+      context: .
+      docker:
+        dockerfile: ./adaptors/integrations-gateway/Dockerfile
+    - image: ghcr.io/formatier/mail-server
+      context: .
+      docker:
+        dockerfile: ./adaptors/mail-server/Dockerfile
+    - image: ghcr.io/formatier/monitor-server
+      context: .
+      docker:
+        dockerfile: ./adaptors/monitor-server/Dockerfile
+        
+    - image: ghcr.io/formatier/auth-service
+      context: .
+      docker:
+        dockerfile: ./services/auth-service/Dockerfile
+    - image: ghcr.io/formatier/forum-service
+      context: .
+      docker:
+        dockerfile: ./services/forum-service/Dockerfile
+    - image: ghcr.io/formatier/interspace-service
+      context: .
+      docker:
+        dockerfile: ./services/interspace-service/Dockerfile
+    - image: ghcr.io/formatier/key-stone-service
+      context: .
+      docker:
+        dockerfile: ./services/key-stone-service/Dockerfile
+    - image: ghcr.io/formatier/notification-service
+      context: .
+      docker:
+        dockerfile: ./services/notification-service/Dockerfile
+    - image: ghcr.io/formatier/payment-service
+      context: .
+      docker:
+        dockerfile: ./services/payment-service/Dockerfile
+    - image: ghcr.io/formatier/plugin-service
+      context: .
+      docker:
+        dockerfile: ./services/plugin-service/Dockerfile
+  tagPolicy:
+    sha256: {}
+
+deploy:
+  kubectl:
+    flags:
+      apply:
+        - ./deployment/k8s/
+        - ./deployment/k8s/secrets
+  helm:
+    releases:
+      - name: "api-gateway"
+        chartPath: ./deployment/charts/api-gateway
+        setValueTemplates:
+          f7r-core.commonDeployment.image.repository: "{{ .IMAGE_REPO_api_gateway }}"
+          f7r-core.commonDeployment.image.tag: "{{ .IMAGE_TAG_api_gateway }}"
+      - name: "formatine-operator"
+        chartPath: ./deployment/charts/formatine-operator
+        setValueTemplates:
+          f7r-core.commonDeployment.image.repository: "{{ .IMAGE_REPO_formatine_operator }}"
+          f7r-core.commonDeployment.image.tag: "{{ .IMAGE_TAG_formatine_operator }}"
+      - name: "formatine-worker"
+        chartPath: ./deployment/charts/formatine-worker
+        setValueTemplates:
+          f7r-core.commonDeployment.image.repository: "{{ .IMAGE_REPO_formatine_worker }}"
+          f7r-core.commonDeployment.image.tag: "{{ .IMAGE_TAG_formatine_worker }}"
+      - name: "integrations-gateway"
+        chartPath: ./deployment/charts/integrations-gateway
+        setValueTemplates:
+          f7r-core.commonDeployment.image.repository: "{{ .IMAGE_REPO_integrations_gateway }}"
+          f7r-core.commonDeployment.image.tag: "{{ .IMAGE_TAG_integrations_gateway }}"
+      - name: "mail-server"
+        chartPath: ./deployment/charts/mail-server
+        setValueTemplates:
+          f7r-core.commonDeployment.image.repository: "{{ .IMAGE_REPO_mail_server }}"
+          f7r-core.commonDeployment.image.tag: "{{ .IMAGE_TAG_mail_server }}"
+      - name: "monitor-server"
+        chartPath: ./deployment/charts/monitor-server
+        setValueTemplates:
+          f7r-core.commonDeployment.image.repository: "{{ .IMAGE_REPO_monitor_server }}"
+          f7r-core.commonDeployment.image.tag: "{{ .IMAGE_TAG_monitor_server }}"
+
+      - name: "auth-service"
+        chartPath: ./deployment/charts/auth-service
+        setValueTemplates:
+          f7r-core.commonDeployment.image.repository: "{{ .IMAGE_REPO_auth_service }}"
+          f7r-core.commonDeployment.image.tag: "{{ .IMAGE_TAG_auth_service }}"
+      - name: "forum-service"
+        chartPath: ./deployment/charts/forum-service
+        setValueTemplates:
+          f7r-core.commonDeployment.image.repository: "{{ .IMAGE_REPO_forum_service }}"
+          f7r-core.commonDeployment.image.tag: "{{ .IMAGE_TAG_forum_service }}"
+      - name: "interspace-service"
+        chartPath: ./deployment/charts/interspace-service
+        setValueTemplates:
+          f7r-core.commonDeployment.image.repository: "{{ .IMAGE_REPO_interspace_service }}"
+          f7r-core.commonDeployment.image.tag: "{{ .IMAGE_TAG_interspace_service }}"
+      - name: "key-stone-service"
+        chartPath: ./deployment/charts/key-stone-service
+        setValueTemplates:
+          f7r-core.commonDeployment.image.repository: "{{ .IMAGE_REPO_key_stone_service }}"
+          f7r-core.commonDeployment.image.tag: "{{ .IMAGE_TAG_key_stone_service }}"
+      - name: "notification-service"
+        chartPath: ./deployment/charts/notification-service
+        setValueTemplates:
+          f7r-core.commonDeployment.image.repository: "{{ .IMAGE_REPO_notification_service }}"
+          f7r-core.commonDeployment.image.tag: "{{ .IMAGE_TAG_notification_service }}"
+      - name: "payment-service"
+        chartPath: ./deployment/charts/payment-service
+        setValueTemplates:
+          f7r-core.commonDeployment.image.repository: "{{ .IMAGE_REPO_payment_service }}"
+          f7r-core.commonDeployment.image.tag: "{{ .IMAGE_TAG_payment_service }}"
+      - name: "plugin-service"
+        chartPath: ./deployment/charts/plugin-service
+        setValueTemplates:
+          f7r-core.commonDeployment.image.repository: "{{ .IMAGE_REPO_plugin_service }}"
+          f7r-core.commonDeployment.image.tag: "{{ .IMAGE_TAG_plugin_service }}"
