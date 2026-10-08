@@ -3,7 +3,7 @@ name = "forma-schema"
 version = "0.1.0"
 edition = "2024"
 description = "Formatier API schema"
-license = "Apache-2.0"
+license = "MIT"
 
 [dependencies]
 woothee = "0.13.0"
