@@ -1,4 +1,7 @@
-use std::{error::Error, fmt::Display};
+use std::{
+    error::Error,
+    fmt::{Debug, Display},
+};
 
 use axum::{body::Body, http::StatusCode, response::IntoResponse};
 use mongodb::bson::{self};
@@ -8,7 +11,7 @@ use crate::inline_mod;
 
 inline_mod!(db);
 
-#[derive(thiserror::Error, Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(thiserror::Error, Clone, Serialize, Deserialize, Default)]
 #[error("{kind} :: {message}")]
 pub struct FormaError {
     #[source]
@@ -30,7 +33,8 @@ pub enum FormaErrorDetail {
     },
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum InternalLevel {
     Panic,
     ClusterException,
@@ -38,13 +42,28 @@ pub enum InternalLevel {
     Error,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct IntenalInfo {
     pub target_kind: Option<String>,
     pub internal_kind: FormaErrorKind,
     pub message: Option<String>,
     pub stack_trace: Option<String>,
     pub level: InternalLevel,
+}
+
+impl Debug for FormaError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(
+            f,
+            "error payload: {}",
+            serde_json::to_string_pretty(self).unwrap()
+        )?;
+        writeln!(
+            f,
+            "internal detail: {}",
+            serde_json::to_string_pretty(&self.internal_info).unwrap()
+        )
+    }
 }
 
 impl FormaError {
@@ -78,6 +97,7 @@ impl FormaError {
                     StatusCode::INTERNAL_SERVER_ERROR
                 }
                 FormaErrorApp::DataConflict => StatusCode::CONFLICT,
+                FormaErrorApp::OptionNone => StatusCode::INTERNAL_SERVER_ERROR
             },
             FormaErrorKind::AuthError(err) => match err {
                 FormaErrorAuth::InternalEncryptionFail => StatusCode::INTERNAL_SERVER_ERROR,
@@ -119,11 +139,11 @@ pub trait FormaErrorConverter<T> {
         kind: K,
         message: &str,
     ) -> Result<T, FormaError>;
-    fn map_forma_err_with_detail<K: Into<FormaErrorKind>>(
+    fn map_forma_err_with_detail<K: Into<FormaErrorKind>, D: Into<Option<FormaErrorDetail>>>(
         self,
         kind: K,
         message: &str,
-        detail: Option<FormaErrorDetail>,
+        detail: D,
     ) -> Result<T, FormaError>;
 }
 
@@ -151,17 +171,17 @@ where
         })
     }
 
-    fn map_forma_err_with_detail<K: Into<FormaErrorKind>>(
+    fn map_forma_err_with_detail<K: Into<FormaErrorKind>, D: Into<Option<FormaErrorDetail>>>(
         self,
         kind: K,
         message: &str,
-        detail: Option<FormaErrorDetail>,
+        detail: D,
     ) -> Result<T, FormaError> {
         self.map_err(|err| FormaError {
             kind: kind.into(),
             internal_kind: None,
             message: format!("{} {}", message, err.to_string()),
-            detail: detail,
+            detail: detail.into(),
             internal_info: Some(IntenalInfo {
                 target_kind: None,
                 internal_kind: FormaErrorKind::Internal,
@@ -169,6 +189,33 @@ where
                 stack_trace: err.source().map(|v| v.to_string()),
                 level: InternalLevel::Error,
             }),
+        })
+    }
+}
+
+pub trait FormaOptionConverter<T> {
+    fn ok_or_forma_error(self) -> Result<T, FormaError>;
+    fn ok_or_forma_error_with_detail(
+        self,
+        detail: impl Into<Option<FormaErrorDetail>>,
+    ) -> Result<T, FormaError>;
+}
+
+impl<T> FormaOptionConverter<T> for Option<T> {
+    fn ok_or_forma_error(self) -> Result<T, FormaError> {
+        self.ok_or_forma_error_with_detail(None)
+    }
+
+    fn ok_or_forma_error_with_detail(
+        self,
+        detail: impl Into<Option<FormaErrorDetail>>,
+    ) -> Result<T, FormaError> {
+        self.ok_or(FormaError {
+            kind: FormaErrorApp::OptionNone.into(),
+            internal_kind: None,
+            message: "option is none".into(),
+            detail: detail.into(),
+            internal_info: None,
         })
     }
 }
@@ -482,6 +529,8 @@ pub enum FormaErrorOAuth {
 
 #[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FormaErrorApp {
+    #[error("option none")]
+    OptionNone,
     #[error("invalid type")]
     InvalidType,
     #[error("invalid timestamp")]
