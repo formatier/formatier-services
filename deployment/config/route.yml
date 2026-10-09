@@ -1,0 +1,130 @@
+upstream:
+  monitor-server:
+    domain: monitor-server.f7r-monitor-server.svc.cluster.local
+    port: 8080
+    scheme: http
+  formatine-operator:
+    domain: formatine-operator.f7r-formatine.svc.cluster.local
+    port: 8080
+    scheme: http
+  formatine-worker:
+    domain: formatine-worker.f7r-formatine.svc.cluster.local
+    port: 8080
+    scheme: http
+  mail-server:
+    domain: mail-server.f7r-mail-server.svc.cluster.local
+    port: 8080
+    scheme: http
+  integrations-gateway:
+    domain: integrations-gateway.f7r-integrations-gateway.svc.cluster.local
+    port: 8080
+    scheme: http
+
+  auth-service:
+    domain: auth-service.f7r-auth-service.svc.cluster.local
+    port: 8080
+    scheme: http
+  forum-service:
+    domain: forum-service.f7r-forum-service.svc.cluster.local
+    port: 8080
+    scheme: http
+  interspace-service:
+    domain: interspace-service.f7r-interspace-service.svc.cluster.local
+    port: 8080
+    scheme: http
+  key-stone-service:
+    domain: key-stone-service.f7r-key-stone-service.svc.cluster.local
+    port: 8080
+    scheme: http
+  notification-service:
+    domain: notification-service.f7r-notification-service.svc.cluster.local
+    port: 8080
+    scheme: http
+  payment-service:
+    domain: payment-service.f7r-payment-service.svc.cluster.local
+    port: 8080
+    scheme: http
+
+route:
+  protected:
+    auth: "token"
+    rate_limiter:
+      algorithm: bucket
+      rps: 10
+      scope: route
+    cors:
+      allow_credentials: true
+      allow_origins:
+        - "formatier.com"
+      allow_methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+      allow_headers:
+        - Authorization
+        - Content-Type
+  semi_protected:
+    auth: "semi_token"
+    rate_limiter:
+      algorithm: bucket
+      rps: 100
+      scope: global
+    cors:
+      allow_credentials: true
+      allow_origins:
+        - "formatier.com"
+      allow_methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+      allow_headers:
+        - Authorization
+        - Content-Type
+  public:
+    auth: "none"
+    rate_limiter:
+      algorithm: window
+      rps: 50
+      scope: global
+    cors:
+      allow_credentials: false
+      allow_origins:
+        - "formatier.com"
+      allow_methods:
+        - GET
+        - POST
+      allow_headers:
+        - Content-Type
+
+proxy:
+  - path: /auth/v1/oauth/{*path}
+    forward: /v1/oauth/{path}
+    upstream: auth-service
+    route: public
+
+  - path: /auth/v1/{*path}
+    forward: /v1/{path}
+    upstream: auth-service
+    route: protected
+
+  - path: /forum/v1/room/{room_id}/manage/{*path}
+    forward: /v1/room/{room_id}/manage/{path}
+    upstream: forum-service
+    route: protected
+
+  - path: /forum/v1/room/{room_id}
+    forward: /v1/room/{room_id}
+    upstream: forum-service
+    route: semi_protected
+
+  - path: /forum/v1/room/{room_id}/posts
+    forward: /v1/room/{room_id}/posts
+    upstream: forum-service
+    route: semi_protected
+
+  - path: /forum/v1/room/{room_id}/post/{post_id}
+    forward: /v1/room/{room_id}/post/{post_id}
+    upstream: forum-service
+    route: semi_protected

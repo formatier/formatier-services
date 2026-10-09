@@ -3,6 +3,11 @@ name = "forma-proc-macro"
 version = "0.1.1"
 edition = "2024"
 description = "Formatier API proc macro"
-license = "Apache-2.0"
+license = "MIT"
+
+[lib]
+proc-macro = true
 
 [dependencies]
+quote = "1.0.47"
+syn = "3.0.3"
