@@ -5,7 +5,7 @@ use mongodb::bson::{self, oid};
 use serde::{Deserialize, Serialize, de::Visitor};
 
 use crate::domain::entities::{
-    FormaError, FormaErrorApp, FormaErrorConverter, FormaErrorDatabase, FormaErrorExt,
+    FormaError, FormaErrorApp, FormaErrorConverter, FormaErrorDatabase,
 };
 
 #[derive(Clone)]

@@ -1,7 +1,7 @@
 use std::{fs, io::Read};
 
 use forma_core::domain::entities::{
-    FormaError, FormaErrorApp, FormaErrorConverter, FormaErrorKind,
+    FormaError, FormaErrorConverter, FormaErrorKind,
 };
 
 use crate::domain::entities::Config;
@@ -26,6 +26,6 @@ mod tests {
 
     #[test]
     fn with_real_config() {
-        let res = load_config().unwrap();
+        let _ = load_config().unwrap();
     }
 }

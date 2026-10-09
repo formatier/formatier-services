@@ -3,7 +3,7 @@ use std::{
     fmt::{Debug, Display},
 };
 
-use axum::{body::Body, http::StatusCode, response::IntoResponse};
+use axum::{http::StatusCode, response::IntoResponse};
 use mongodb::bson::{self};
 use serde::{Deserialize, Serialize};
 
@@ -97,7 +97,7 @@ impl FormaError {
                     StatusCode::INTERNAL_SERVER_ERROR
                 }
                 FormaErrorApp::DataConflict => StatusCode::CONFLICT,
-                FormaErrorApp::OptionNone => StatusCode::INTERNAL_SERVER_ERROR
+                FormaErrorApp::OptionNone => StatusCode::INTERNAL_SERVER_ERROR,
             },
             FormaErrorKind::AuthError(err) => match err {
                 FormaErrorAuth::InternalEncryptionFail => StatusCode::INTERNAL_SERVER_ERROR,
