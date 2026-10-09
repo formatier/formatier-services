@@ -13,11 +13,13 @@ use crate::{
 
 fn get_url(upstream: &HashMap<UpstreamKey, Upstream>, key: UpstreamKey) -> Url {
     let upstream = upstream.get(&key).unwrap();
-    let mut url = Url::parse(&upstream.domain)
+    let url = format!(
+        "{}://{}:{}",
+        &upstream.scheme, &upstream.domain, &upstream.port
+    );
+    let url = Url::parse(&url)
         .map_forma_err(FormaErrorExternalService::UrlError, "cannot parse url")
         .unwrap();
-    url.set_port(Some(upstream.port)).unwrap();
-    url.set_scheme(&upstream.scheme.to_string()).unwrap();
 
     url
 }
