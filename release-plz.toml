@@ -7,14 +7,14 @@ git_tag_enable = true
 pr_labels = ["release"]
 publish = false
 
-#[[package]]
-#name = "forma-core"
-#publish = true
+[[package]]
+name = "forma-core"
+publish = true
 
-#[[package]]
-#name = "forma-proc-macro"
-#publish = true
+[[package]]
+name = "forma-proc-macro"
+publish = true
 
-#[[package]]
-#name = "forma-schema"
-#publish = true
+[[package]]
+name = "forma-schema"
+publish = true
