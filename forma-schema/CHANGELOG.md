@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/formatier/formatier-services/compare/forma-schema-v0.1.0...forma-schema-v0.2.0) - 2026-10-09
+
+### Other
+
+- initialize server ([#2](https://github.com/formatier/formatier-services/pull/2))
+
 ## [0.1.0](https://github.com/formatier/formatier-services/releases/tag/forma-schema-v0.1.0) - 2026-10-07
 
 ### Other
