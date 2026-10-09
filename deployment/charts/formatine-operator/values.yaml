@@ -1,0 +1,25 @@
+f7r-core:
+  commonDeployment:
+    name: formatine-operator
+    namespace: f7r-formatine-operator
+    replicas: 20
+    labels:
+      adaptor: formatine-operator
+    availability:
+      minReadySeconds: 10
+      maxSurge: 25%
+      maxUnavailable: 25%
+    resource:
+      minCpu: 100m
+      minMemory: 256Mi
+      maxCpu: 250m
+      maxMemory: 512Mi
+  commonService:
+    name: formatine-operator
+    namespace: f7r-formatine-operator
+    labels:
+      adaptor: formatine-operator
+  port:
+    serverPort: 3000
+    exposePort: 3000
+    protocol: TCP

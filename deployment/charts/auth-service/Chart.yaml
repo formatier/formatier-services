@@ -1,0 +1,7 @@
+apiVersion: v2
+name: f7r-auth-service
+version: 0.0.1
+dependencies:
+  - name: f7r-core
+    version: 0.x.x
+    repository: file://../core

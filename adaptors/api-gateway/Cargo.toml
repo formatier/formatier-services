@@ -4,3 +4,19 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+url = "2.5.8"
+dynfmt = { version = "0.2.0", features = ["curly"] }
+serde_yaml_ng = "0.10"
+axum-reverse-proxy = "2.2.0"
+tower = "0.5.3"
+tower-http = { version = "0.7.1", features = ["cors"] }
+
+axum = { workspace = true }
+axum-extra = { workspace = true }
+forma-core = { workspace = true }
+forma-schema = { workspace = true }
+tokio = { workspace = true }
+serde_json = { workspace = true }
+serde = { workspace = true }
+async-trait = { workspace = true }
+reqwest = { workspace = true }

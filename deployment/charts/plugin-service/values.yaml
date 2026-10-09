@@ -1,0 +1,25 @@
+f7r-core:
+  commonDeployment:
+    name: plugin-service
+    namespace: f7r-plugin-service
+    replicas: 8
+    labels:
+      service: plugin-service
+    availability:
+      minReadySeconds: 10
+      maxSurge: 20%
+      maxUnavailable: 20%
+    resource:
+      minCpu: 100m
+      minMemory: 256Mi
+      maxCpu: 250m
+      maxMemory: 512Mi
+  commonService:
+    name: plugin-service
+    namespace: f7r-plugin-service
+    labels:
+      adaptor: plugin-service
+  port:
+    serverPort: 3000
+    exposePort: 3000
+    protocol: TCP

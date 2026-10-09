@@ -1,0 +1,25 @@
+f7r-core:
+  commonDeployment:
+    name: forum-service
+    namespace: f7r-forum-service
+    replicas: 8
+    labels:
+      service: forum-service
+    availability:
+      minReadySeconds: 10
+      maxSurge: 20%
+      maxUnavailable: 20%
+    resource:
+      minCpu: 100m
+      minMemory: 256Mi
+      maxCpu: 250m
+      maxMemory: 512Mi
+  commonService:
+    name: forum-service
+    namespace: f7r-forum-service
+    labels:
+      adaptor: forum-service
+  port:
+    serverPort: 3000
+    exposePort: 3000
+    protocol: TCP

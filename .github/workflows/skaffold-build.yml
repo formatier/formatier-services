@@ -1,0 +1,54 @@
+name: Skaffold build
+
+on:
+  push:
+    tags:
+      - '^([a-z0-9]+(?:-[a-z0-9]+)*)-v([0-9]+.[0-9]+.[0-9]+)$'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+        with:
+          version: v0.10.0
+
+      - name: Install Skaffold
+        run: |
+          curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64 && \
+          sudo install skaffold /usr/local/bin/
+
+      - name: Parse Git tag
+        id: parsed_tag
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          REGEX="^([a-z0-9]+(?:-[a-z0-9]+)*)-v([0-9]+.[0-9]+.[0-9]+)$"
+          if [[ $TAG =~ $REGEX ]]; then
+            SERVICE_NAME="${BASH_REMATCH[1]}"
+            FULL_VERSION="${BASH_REMATCH[2]}"
+
+            echo "service=$SERVICE" >> $GITHUB_OUTPUT
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          else
+            exit 1
+          fi
+
+      - name: Build Docker image
+        run: |
+          skaffold build \
+            --build-artifacts=${{ steps.parsed_tag.outputs.service }} \
+            --tag=${{ steps.parsed_tag.outputs.version }} \
+            --default-repo=ghcr.io/${{ github.repository_owner }} \
+            --push=true
+            -p="prod"
