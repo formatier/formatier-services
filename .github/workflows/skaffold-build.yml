@@ -3,11 +3,14 @@ name: Skaffold build
 on:
   push:
     tags:
-      - '^([a-z0-9]+(?:-[a-z0-9]+)*)-v([0-9]+.[0-9]+.[0-9]+)$'
+      - '*-v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -31,24 +34,12 @@ jobs:
 
       - name: Parse Git tag
         id: parsed_tag
-        run: |
-          TAG="${GITHUB_REF_NAME}"
-          REGEX="^([a-z0-9]+(?:-[a-z0-9]+)*)-v([0-9]+.[0-9]+.[0-9]+)$"
-          if [[ $TAG =~ $REGEX ]]; then
-            SERVICE_NAME="${BASH_REMATCH[1]}"
-            FULL_VERSION="${BASH_REMATCH[2]}"
-
-            echo "service=$SERVICE" >> $GITHUB_OUTPUT
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-          else
-            exit 1
-          fi
+        run: ./playground parse-tag ${GITHUB_REF_NAME} --github-output
 
       - name: Build Docker image
         run: |
           skaffold build \
-            --build-artifacts=${{ steps.parsed_tag.outputs.service }} \
+            --build-image=${{ steps.parsed_tag.outputs.package }} \
             --tag=${{ steps.parsed_tag.outputs.version }} \
             --default-repo=ghcr.io/${{ github.repository_owner }} \
             --push=true
-            -p="prod"
