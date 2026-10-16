@@ -1,0 +1,6 @@
+dependencies:
+- name: f7r-core
+  repository: file://../core
+  version: 0.0.1
+digest: sha256:ca714e79ffe714149cb912c885293fcc545df9895e313d5a651599e80f06d354
+generated: "2026-10-16T14:35:49.437934969+07:00"

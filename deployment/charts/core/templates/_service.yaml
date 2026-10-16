@@ -10,9 +10,9 @@ metadata:
     {{- $value.labels | toYaml | nindent 4 }}
 spec:
   selector:
-  app: nginx
-    ports:
-      - targetPort: {{ $port.serverPort }}
-        port: {{ $port.exposePort }}
-        protocol: {{ $port.protocol }}
+    {{- $value.labels | toYaml | nindent 4 }}
+  ports:
+    - targetPort: {{ $port.serverPort }}
+      port: {{ $port.exposePort }}
+      protocol: {{ $port.protocol }}
 {{ end }}

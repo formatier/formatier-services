@@ -24,13 +24,12 @@ spec:
       labels:
         {{- $value.labels | toYaml | nindent 8 }}
     spec:
-      imagePullSecrets:
-        - name: "formatier-ghcr-registry"
       dnsPolicy: ClusterFirstWithHostNet
       restartPolicy: Always
       containers:
         - name: {{ $value.name | quote }}
           image: "{{ $value.image.repository }}:{{ $value.image.tag }}"
+          imagePullPolicy: Always
           ports:
             - containerPort: {{ $port.serverPort }}
           resources:
