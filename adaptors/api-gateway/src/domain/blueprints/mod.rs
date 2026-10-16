@@ -1,7 +1,7 @@
-use forma_core::domain::entities::{
+use forma_core::{domain::entities::{
     FormaError, FormaErrorApp, FormaErrorConverter, FormaErrorExt, FormaErrorExternalService,
     FormaErrorReqwestExt,
-};
+}, inline_mod};
 use forma_schema::{
     Request, ResultReply,
     auth_service::{AppAuthenticateV1Reply, AppAuthenticateV1Request},
