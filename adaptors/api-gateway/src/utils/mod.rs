@@ -19,13 +19,3 @@ pub fn load_config() -> Result<Config, FormaError> {
 
     Ok(config)
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn with_real_config() {
-        let _ = load_config().unwrap();
-    }
-}

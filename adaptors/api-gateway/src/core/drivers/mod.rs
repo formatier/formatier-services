@@ -1,8 +1,5 @@
 use axum::{
-    Json,
-    extract::{Request, State},
-    middleware::Next,
-    response::{IntoResponse, Response},
+    Json, debug_handler, extract::{Request, State}, middleware::Next, response::{IntoResponse, Response},
 };
 use axum_extra::extract::CookieJar;
 use forma_core::domain::entities::{FormaError, FormaErrorAuth, FormaErrorKind};
@@ -23,7 +20,7 @@ impl AxumDriver {
 }
 
 pub async fn get_cookies(
-    State(_state): State<Arc<AxumDriver>>,
+    State(state): State<Arc<AxumDriver>>,
     jar: CookieJar,
 ) -> Json<Vec<String>> {
     let mut cookies_name = Vec::new();
