@@ -19,7 +19,6 @@ pub struct AppAuthenticateV1Reply {
 pub struct SigninByOAuthProviderV1Request {
     pub provider: ProviderV1,
     pub auth_code: Box<str>,
-    pub user_agent: Box<str>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -44,4 +43,9 @@ pub struct SigninV1Reply {
     pub account: AccountV1,
     pub user: Option<UserV1>,
     pub auth_token: Box<str>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct GetAccountV1Reply {
+    pub account: AccountV1,
 }
