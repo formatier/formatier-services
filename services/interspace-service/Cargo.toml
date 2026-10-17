@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+crypto = "0.5.1"
+serde-transcode = "1.1.1"
+
 axum = { workspace = true }
 tokio = { workspace = true }
 serde = { workspace = true }

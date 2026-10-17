@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::{core::drivers, factory::make_router};
 
 mod core;
+mod domain;
 mod factory;
 
 #[tokio::main]
