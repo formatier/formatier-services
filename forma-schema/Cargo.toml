@@ -9,6 +9,7 @@ license = "MIT"
 woothee = "0.13.0"
 
 forma-core = { workspace = true }
+forma-proc-macro = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 mongodb = { workspace = true }

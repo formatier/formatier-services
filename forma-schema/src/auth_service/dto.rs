@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::auth_service::{AccountV1, UserV1};
 
-use super::ProviderV1;
+use super::Provider;
 
 #[derive(Serialize, Deserialize)]
 pub struct AppAuthenticateV1Request {
@@ -17,7 +17,7 @@ pub struct AppAuthenticateV1Reply {
 
 #[derive(Serialize, Deserialize)]
 pub struct SigninByOAuthProviderV1Request {
-    pub provider: ProviderV1,
+    pub provider: Provider,
     pub auth_code: Box<str>,
 }
 

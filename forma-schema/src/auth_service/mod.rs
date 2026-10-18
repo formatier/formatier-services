@@ -1,6 +1,7 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 use forma_core::domain::entities::{BsonTime, ChronoTime, Model, ModelPairs, Timestamp};
+use forma_proc_macro::serde_migrator;
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 
@@ -10,9 +11,18 @@ inline_mod!(dto);
 
 #[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 #[serde(rename_all = "lowercase")]
-pub enum ProviderV1 {
+pub enum Provider {
     Google,
     Github,
+}
+
+impl Display for Provider {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Provider::Google => write!(f, "google"),
+            Provider::Github => write!(f, "github")
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Default)]
@@ -21,7 +31,7 @@ pub struct AccountV1 {
     pub user_name: Option<String>,
     pub password: Option<String>,
 
-    pub providers: HashMap<ProviderV1, AccountV1Provider>,
+    pub providers: HashMap<Provider, AccountV1Provider>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -83,11 +93,11 @@ pub struct RefreshTokenClaimsV1 {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct TokenClaimsV1<T> {
+pub struct TokenClaims<T> {
     #[serde(rename = "iss")]
-    pub issuer: IssuerV1,
+    pub issuer: Issuer,
     #[serde(rename = "aud")]
-    pub audience: Box<[AudienceV1]>,
+    pub audience: Box<[Audience]>,
 
     #[serde(rename = "exp")]
     pub expiration_time: Timestamp<ChronoTime>,
@@ -98,7 +108,7 @@ pub struct TokenClaimsV1<T> {
 }
 
 #[derive(Serialize, Deserialize)]
-pub enum AudienceV1 {
+pub enum Audience {
     #[serde(rename = "formatier-api")]
     FormatierAPI,
     #[serde(rename = "formatier-mail-server")]
@@ -110,7 +120,7 @@ pub enum AudienceV1 {
 }
 
 #[derive(Serialize, Deserialize)]
-pub enum IssuerV1 {
+pub enum Issuer {
     #[serde(rename = "formatier")]
     Formatier,
 }
@@ -136,8 +146,26 @@ impl From<woothee::parser::WootheeResult<'_>> for SessionV1 {
     }
 }
 
+serde_migrator!{
+    #[derive(Serialize, Deserialize)]
+    pub Account
+    "v1": AccountV1;
+}
+
+serde_migrator!{
+    #[derive(Serialize, Deserialize)]
+    pub User
+    "v1": UserV1;
+}
+
+serde_migrator!{
+    #[derive(Serialize, Deserialize)]
+    pub Session
+    "v1": SessionV1;
+}
+
 #[derive(Serialize, Deserialize, Default)]
-pub struct AccountV1Metadata {
+pub struct AccountMetadata {
     pub create_at: Timestamp<BsonTime>,
     pub update_at: Timestamp<BsonTime>,
 
@@ -145,53 +173,23 @@ pub struct AccountV1Metadata {
 }
 
 #[derive(Serialize, Deserialize, Default)]
-pub struct UserV1Metadata {
+pub struct UserMetadata {
     pub create_at: Timestamp<BsonTime>,
     pub update_at: Timestamp<BsonTime>,
 }
 
 #[derive(Serialize, Deserialize, Default)]
-pub struct SessionV1Metadata {
+pub struct SessionMetadata {
     pub create_at: Timestamp<BsonTime>,
     pub update_at: Timestamp<BsonTime>,
 
     pub account_id: ObjectId,
 }
 
-#[derive(Serialize, Deserialize)]
-#[serde(tag = "version", bound = "")]
-pub enum AccountModel<S> {
-    #[serde(rename = "v1")]
-    V1(Model<AccountV1, AccountV1Metadata, S>),
-}
-#[derive(Serialize, Deserialize)]
-#[serde(tag = "version", bound = "")]
-pub enum UserModel<S> {
-    #[serde(rename = "v1")]
-    V1(Model<UserV1, UserV1Metadata, S>),
-}
-#[derive(Serialize, Deserialize)]
-#[serde(tag = "version", bound = "")]
-pub enum SessionModel<S> {
-    #[serde(rename = "v1")]
-    V1(Model<SessionV1, SessionV1Metadata, S>),
-}
+pub type AccountModel<S> = Model<Account, AccountMetadata, S>;
+pub type UserModel<S> = Model<User, UserMetadata, S>;
+pub type SessionModel<S> = Model<Session, SessionMetadata, S>;
 
-#[derive(Serialize, Deserialize)]
-#[serde(tag = "version")]
-pub enum AccountModelPairs {
-    #[serde(rename = "v1")]
-    V1(ModelPairs<AccountV1, AccountV1Metadata>),
-}
-#[derive(Serialize, Deserialize)]
-#[serde(tag = "version")]
-pub enum UserModelPairs {
-    #[serde(rename = "v1")]
-    V1(ModelPairs<UserV1, UserV1Metadata>),
-}
-#[derive(Serialize, Deserialize)]
-#[serde(tag = "version")]
-pub enum SessionModelPairs {
-    #[serde(rename = "v1")]
-    V1(ModelPairs<SessionV1, SessionV1Metadata>),
-}
+pub type AccountModelPairs = ModelPairs<Account, AccountMetadata>;
+pub type UserModelPairs = ModelPairs<User, UserMetadata>;
+pub type SessionModelPairs = ModelPairs<Session, SessionMetadata>;

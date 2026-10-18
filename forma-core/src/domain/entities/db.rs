@@ -141,6 +141,7 @@ pub struct Saved;
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct Model<T, M, S> {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     id: Option<oid::ObjectId>,
     #[serde(flatten)]
     pub data: T,
