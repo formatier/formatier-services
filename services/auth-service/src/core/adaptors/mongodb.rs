@@ -101,7 +101,7 @@ impl AccountRepositoryBlueprint for MongodbAdaptor {
                 FormaErrorDatabase::NotFound,
                 "account not found",
             ))
-        } else {self.
+        } else {
             Ok(())
         }
     }
