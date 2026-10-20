@@ -1,10 +1,12 @@
 use std::sync::Arc;
 
+use crate::domain::entities::{
+    AccessTokenClaims, Audience, InitializationTokenClaims, Issuer, LatestSession,
+    RefreshTokenClaims, Session, SessionModelPairs, SessionV1, TokenClaims,
+};
 use chrono::{DateTime, TimeDelta, Utc};
-use forma_core::domain::entities::{FormaError, FormaErrorAuth, FormaErrorExt};
-use forma_schema::auth_service::{
-    AccessTokenClaims, Audience, InitializationTokenClaimsV1, Issuer, RefreshTokenClaims,
-    SessionV1, SessionModelPairs, TokenClaims,
+use forma_core::domain::entities::{
+    FormaError, FormaErrorAuth, FormaErrorConverter, FormaErrorExt, SavedModel,
 };
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
@@ -47,7 +49,7 @@ impl TokenService {
 
     fn encode_token<T: Serialize>(
         &self,
-        claims: TokenClaimsV1<T>,
+        claims: TokenClaims<T>,
         typ: TokenType,
     ) -> Result<String, FormaError> {
         let mut header = Header::new(self.algorithm_config.algorithms[0]);
@@ -62,7 +64,7 @@ impl TokenService {
         &self,
         token: &str,
         typ: TokenType,
-    ) -> Result<TokenClaimsV1<T>, FormaError> {
+    ) -> Result<TokenClaims<T>, FormaError> {
         let decoded = decode(token, &self.decoding_key, &self.algorithm_config)
             .map_forma_err(FormaErrorAuth::TokenInvalid, "cannot parse token")?;
 
@@ -86,7 +88,7 @@ impl TokenService {
         user_id: &str,
         email: &str,
         scope: &[&str],
-        user_agent: SessionV1,
+        user_agent: LatestSession,
     ) -> Result<(String, String), FormaError> {
         let session_metadata = self
             .token_repository
@@ -94,10 +96,13 @@ impl TokenService {
             .await?;
         let session = self
             .token_repository
-            .create_session(SessionV1ModelPairs {
-                data: user_agent.into(),
-                metadata: session_metadata,
-            })
+            .create_session(
+                SessionModelPairs {
+                    data: user_agent.into(),
+                    metadata: session_metadata,
+                }
+                .into(),
+            )
             .await?;
 
         self.token_cache
@@ -105,18 +110,18 @@ impl TokenService {
             .await?;
 
         let access_token = self.encode_token(
-            TokenClaimsV1 {
-                issuer: IssuerV1::Formatier,
+            TokenClaims {
+                issuer: Issuer::Formatier,
                 audience: [
-                    AudienceV1::FormatierAPI,
-                    AudienceV1::FormatierBucketServer,
-                    AudienceV1::FormatierOrchestrationServer,
-                    AudienceV1::FormatierMailServer,
+                    Audience::FormatierAPI,
+                    Audience::FormatierBucketServer,
+                    Audience::FormatineServer,
+                    Audience::FormatierMailServer,
                 ]
                 .into(),
                 expiration_time: (Utc::now() + TimeDelta::days(4)).into(),
                 issue_at: Utc::now().into(),
-                claims: AccessTokenClaimsV1 {
+                claims: AccessTokenClaims {
                     session_id: session.id().to_hex(),
                     account_id: account_id.into(),
                     email: email.into(),
@@ -128,18 +133,18 @@ impl TokenService {
         )?;
 
         let refresh_token = self.encode_token(
-            TokenClaimsV1 {
-                issuer: IssuerV1::Formatier,
+            TokenClaims {
+                issuer: Issuer::Formatier,
                 audience: [
-                    AudienceV1::FormatierAPI,
-                    AudienceV1::FormatierBucketServer,
-                    AudienceV1::FormatierOrchestrationServer,
-                    AudienceV1::FormatierMailServer,
+                    Audience::FormatierAPI,
+                    Audience::FormatierBucketServer,
+                    Audience::FormatineServer,
+                    Audience::FormatierMailServer,
                 ]
                 .into(),
                 expiration_time: (Utc::now() + TimeDelta::days(4)).into(),
                 issue_at: Utc::now().into(),
-                claims: RefreshTokenClaimsV1 {
+                claims: RefreshTokenClaims {
                     session_id: session.id().to_hex(),
                 },
             },
@@ -151,12 +156,12 @@ impl TokenService {
 
     pub fn issue_initialization_token(&self, account_id: &str) -> Result<String, FormaError> {
         let initialization_token = self.encode_token(
-            TokenClaimsV1 {
-                issuer: IssuerV1::Formatier,
-                audience: [AudienceV1::FormatierAPI].into(),
+            TokenClaims {
+                issuer: Issuer::Formatier,
+                audience: [Audience::FormatierAPI].into(),
                 expiration_time: (Utc::now() + TimeDelta::days(4)).into(),
                 issue_at: Utc::now().into(),
-                claims: InitializationTokenClaimsV1 {
+                claims: InitializationTokenClaims {
                     account_id: account_id.into(),
                 },
             },
@@ -170,7 +175,7 @@ impl TokenService {
         &self,
         token: &str,
         typ: TokenType,
-    ) -> Result<(bool, TokenClaimsV1<T>), FormaError> {
+    ) -> Result<(bool, TokenClaims<T>), FormaError> {
         let claims = self.decode_token(token, typ)?;
 
         let expiration_time: DateTime<Utc> = claims.expiration_time.clone().into();

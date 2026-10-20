@@ -1,10 +1,8 @@
 use std::collections::HashMap;
 
+use crate::domain::entities::{AccountModel, Provider, SessionMetadata, SessionModel, UserModel};
 use async_trait::async_trait;
 use forma_core::domain::entities::{Created, FormaError, Saved};
-use forma_schema::auth_service::{
-    AccountModel, Provider, SessionMetadata, SessionModel, UserModel
-};
 
 pub trait RepositoryBlueprint: AccountRepositoryBlueprint + TokenRepositoryBlueprint {}
 
@@ -12,7 +10,7 @@ pub trait RepositoryBlueprint: AccountRepositoryBlueprint + TokenRepositoryBluep
 pub trait AccountRepositoryBlueprint {
     async fn create_account(
         &self,
-        account: impl Into<AccountModel<Created>> + Send,
+        account: AccountModel<Created>,
     ) -> Result<AccountModel<Saved>, FormaError>;
 
     async fn add_oauth_provider(
@@ -44,7 +42,7 @@ pub trait AccountRepositoryBlueprint {
     async fn init_user(
         &self,
         account_id: &str,
-        user: impl Into<UserModel<Created>> + Send,
+        user: UserModel<Created>,
     ) -> Result<UserModel<Saved>, FormaError>;
 
     async fn get_user(&self, user_id: &str) -> Result<UserModel<Saved>, FormaError>;
@@ -71,7 +69,7 @@ pub trait TokenRepositoryBlueprint {
 
     async fn create_session(
         &self,
-        session: impl Into<SessionModel<Created>> + Send,
+        session: SessionModel<Created>,
     ) -> Result<SessionModel<Saved>, FormaError>;
 
     async fn is_session_available(&self, session_id: &str) -> Result<bool, FormaError>;

@@ -1,10 +1,10 @@
 use std::{collections::HashMap, sync::Arc};
 
-use forma_core::domain::entities::{FormaError, FormaErrorAuth, Saved};
-use forma_schema::auth_service::{
-    AccessTokenClaimsV1, AccountV1, AccountV1Metadata, AccountV1Model, AccountV1ModelPairs,
-    AccountV1Provider, ProviderV1, RefreshTokenClaimsV1, TokenClaimsV1,
+use crate::domain::entities::{
+    AccessTokenClaims, AccountMetadata, AccountModel, AccountModelPairs, AccountV1,
+    AccountV1Provider, Provider, RefreshTokenClaims, TokenClaims,
 };
+use forma_core::domain::entities::{FormaError, FormaErrorAuth, Saved, SavedModel};
 
 use crate::{
     core::services::TokenService,
@@ -37,18 +37,18 @@ impl UseCase {
         }
     }
 
-    pub async fn signin_by_oauth_provider_v1(
+    pub async fn signin_by_oauth_provider(
         &self,
-        provider: ProviderV1,
+        provider: Provider,
         code: &str,
         user_agent: &str,
     ) -> Result<(String, Option<String>), FormaError> {
         let oauth_user_info = match provider {
-            ProviderV1::Google => {
+            Provider::Google => {
                 let token = self.google_oauth.exchange_code(code).await?;
                 self.google_oauth.get_authorized_user(&token).await?
             }
-            ProviderV1::Github => {
+            Provider::Github => {
                 let token = self.github_oauth.exchange_code(code).await?;
                 self.github_oauth.get_authorized_user(&token).await?
             }
@@ -63,26 +63,30 @@ impl UseCase {
             Some(account) => account,
             None => {
                 self.repository
-                    .create_account(AccountV1ModelPairs {
-                        data: AccountV1 {
-                            email: oauth_user_info.email,
-                            providers: HashMap::from([(
-                                provider,
-                                AccountV1Provider {
-                                    provider_id: oauth_user_info.provider_id,
-                                },
-                            )]),
-                            ..Default::default()
+                    .create_account(
+                        AccountModelPairs {
+                            data: AccountV1 {
+                                email: oauth_user_info.email,
+                                providers: HashMap::from([(
+                                    provider,
+                                    AccountV1Provider {
+                                        provider_id: oauth_user_info.provider_id,
+                                    },
+                                )]),
+                                ..Default::default()
+                            }
+                            .into(),
+                            metadata: AccountMetadata::default(),
                         }
                         .into(),
-                        metadata: AccountV1Metadata::default(),
-                    })
+                    )
                     .await?
             }
         };
 
         let account_id = account.id().to_hex();
         let account_metadata = account.metadata;
+        let (account, _) = account.data.migrate();
 
         if let Some(user_id) = account_metadata.user_id {
             let user_agent =
@@ -97,7 +101,7 @@ impl UseCase {
                 .issue_tokens_and_create_session(
                     &account_id,
                     &user_id.to_hex(),
-                    &account.data.email,
+                    &account.email,
                     &["all"],
                     user_agent.into(),
                 )
@@ -111,13 +115,13 @@ impl UseCase {
         }
     }
 
-    pub async fn decode_token_v1(
+    pub async fn decode_token(
         &self,
         access_token: &str,
-    ) -> Result<TokenClaimsV1<AccessTokenClaimsV1>, FormaError> {
+    ) -> Result<TokenClaims<AccessTokenClaims>, FormaError> {
         let (access_token_expired, access_token_claims) = self
             .token_service
-            .parse_token::<AccessTokenClaimsV1>(access_token, TokenType::Access)
+            .parse_token::<AccessTokenClaims>(access_token, TokenType::Access)
             .await?;
 
         if access_token_expired {
@@ -141,17 +145,10 @@ impl UseCase {
         }
     }
 
-    pub async fn refresh_token_v1(
-        &self,
-        refresh_token: &str,
-    ) -> Result<(String, String), FormaError> {
-        
+    pub async fn refresh_token(&self, refresh_token: &str) -> Result<(String, String), FormaError> {
     }
 
-    pub async fn get_account_v1(
-        &self,
-        account_id: &str,
-    ) -> Result<AccountV1Model<Saved>, FormaError> {
+    pub async fn get_account(&self, account_id: &str) -> Result<AccountModel<Saved>, FormaError> {
         let account_model = self.repository.get_account(account_id).await?;
         account_model
     }

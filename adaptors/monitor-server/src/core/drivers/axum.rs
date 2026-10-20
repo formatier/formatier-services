@@ -1,7 +1,12 @@
 use std::sync::Arc;
 
-use axum::{Json, extract::State, http::StatusCode, response::{IntoResponse, Response}};
-use forma_schema::HealthzCheck;
+use axum::{
+    Json,
+    extract::State,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
+use forma_core::domain::entities::HealthzCheck;
 
 pub struct AxumDriver;
 

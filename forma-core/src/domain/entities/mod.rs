@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::inline_mod;
 
 inline_mod!(db);
+inline_mod!(dto);
 
 #[derive(thiserror::Error, Clone, Serialize, Deserialize, Default)]
 #[error("{kind} :: {message}")]

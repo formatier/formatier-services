@@ -7,10 +7,12 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use forma_schema::auth_service;
 use serde::Serialize;
 
-use crate::core::use_cases::UseCase;
+use crate::{
+    core::use_cases::UseCase,
+    domain::entities::{SigninByOAuthProviderV1Reply, SigninByOAuthProviderV1Request},
+};
 
 struct JsonResponse<T>(StatusCode, T);
 
@@ -34,18 +36,18 @@ pub struct AxumDriver {
 
 pub async fn signin_by_oauth_provider(
     State(state): State<Arc<AxumDriver>>,
-    req: Json<auth_service::SigninByOAuthProviderV1Request>,
+    req: Json<SigninByOAuthProviderV1Request>,
 ) -> impl IntoResponse {
     match state
         .use_case
-        .signin_by_oauth_provider_v1(req.provider.into(), &req.auth_code, &req.user_agent)
+        .signin_by_oauth_provider(req.provider.into(), &req.auth_code, &req.user_agent)
         .await
     {
         Ok((access_token, refresh_token)) => JsonResponse(
             StatusCode::OK,
-            auth_service::SigninByOAuthProviderReply {
-                access_token,
-                refresh_token,
+            SigninByOAuthProviderV1Reply {
+                access_token: access_token.into(),
+                refresh_token: refresh_token.map(|v| v.into()),
             },
         )
         .into_response(),
@@ -54,7 +56,7 @@ pub async fn signin_by_oauth_provider(
 }
 
 pub async fn middleware_auth(State(state): State<Arc<AxumDriver>>) -> impl IntoResponse {
-    let token = state.use_case.decode_and_refresh_token_v1(token, typ);
+    let token = state.use_case.decode_and_refresh_token(token, typ);
 }
 
 impl AxumDriver {

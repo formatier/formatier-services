@@ -1,9 +1,12 @@
+use auth_service::domain::entities::AppAuthenticateV1Reply;
 use axum::{
-    Json, extract::{Request, State}, middleware::Next, response::{IntoResponse, Response},
+    Json,
+    extract::{Request, State},
+    middleware::Next,
+    response::{IntoResponse, Response},
 };
 use axum_extra::extract::CookieJar;
 use forma_core::domain::entities::{FormaError, FormaErrorAuth, FormaErrorKind};
-use forma_schema::auth_service::AppAuthenticateV1Reply;
 use reqwest::StatusCode;
 use std::sync::Arc;
 

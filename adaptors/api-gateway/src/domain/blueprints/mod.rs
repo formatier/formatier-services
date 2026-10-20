@@ -1,10 +1,10 @@
-use forma_core::{domain::entities::{
-    FormaError, FormaErrorApp, FormaErrorConverter, FormaErrorExt, FormaErrorExternalService,
-    FormaErrorReqwestExt,
-}, inline_mod};
-use forma_schema::{
-    Request, ResultReply,
-    auth_service::{AppAuthenticateV1Reply, AppAuthenticateV1Request},
+use auth_service::domain::entities::{AppAuthenticateV1Reply, AppAuthenticateV1Request};
+use forma_core::{
+    domain::entities::{
+        FormaError, FormaErrorApp, FormaErrorConverter, FormaErrorExt, FormaErrorExternalService,
+        FormaErrorReqwestExt, Request, ResultReply,
+    },
+    inline_mod,
 };
 use url::Url;
 

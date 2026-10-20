@@ -1,23 +1,24 @@
 use std::collections::HashMap;
 
+use crate::domain::{
+    blueprints::{AccountRepositoryBlueprint, RepositoryBlueprint, TokenRepositoryBlueprint},
+    entities::{
+        Account, AccountMetadata, AccountModel, AccountModelPairs, LatestAccount, Provider,
+        SessionMetadata, SessionModel, SessionModelPairs, UserModel, UserModelPairs,
+    },
+};
 use async_trait::async_trait;
 use forma_core::{
     domain::entities::{
-        BsonTime, Created, CreatedModel, FormaError, FormaErrorConverter, FormaErrorDatabase, FormaErrorMongoExt, Saved, Timestamp, ToDocument,
-    }, value_objects::{
+        BsonTime, Created, CreatedModel, FormaError, FormaErrorConverter, FormaErrorDatabase,
+        FormaErrorMongoExt, Saved, Timestamp, ToDocument,
+    },
+    value_objects::{
         AUTH_DB_ACCOUNT_COLLECTION_KEY, AUTH_DB_SESSION_COLLECTION_KEY, AUTH_DB_USER_COLLECTION_KEY,
     },
 };
-use forma_schema::auth_service::{
-    Account, AccountMetadata, AccountModel, AccountModelPairs, LatestAccount, Provider,
-    SessionMetadata, SessionModel, SessionModelPairs, UserModel, UserModelPairs,
-};
 use futures::{StreamExt, TryStreamExt};
 use mongodb::bson::{self, oid};
-
-use crate::domain::blueprints::{
-    AccountRepositoryBlueprint, RepositoryBlueprint, TokenRepositoryBlueprint,
-};
 
 pub struct MongodbAdaptor {
     db: mongodb::Database,
@@ -46,20 +47,19 @@ fn parse_object_id(object_id: &str) -> Result<oid::ObjectId, FormaError> {
 }
 
 #[async_trait]
-impl AccountRepositoryBlueprint for MongodbAdaptor {    
+impl AccountRepositoryBlueprint for MongodbAdaptor {
     async fn create_account(
         &self,
-        account: impl Into<AccountModel<Created>> + Send,
+        account: AccountModel<Created>,
     ) -> Result<AccountModel<Saved>, FormaError> {
-        let model = account.into();
         let res = self
             .account_collection
-            .insert_one(model.document()?)
+            .insert_one(account.document()?)
             .await
             .map_mongo_forma_err(FormaErrorDatabase::InsertError, "cannot insert account")?;
 
         if let Some(id) = res.inserted_id.as_object_id() {
-            Ok(model.with_id(id))
+            Ok(account.with_id(id))
         } else {
             Err(FormaError::new(
                 FormaErrorDatabase::InsertError,
@@ -191,7 +191,7 @@ impl AccountRepositoryBlueprint for MongodbAdaptor {
     async fn init_user(
         &self,
         account_id: &str,
-        user: impl Into<UserModel<Created>> + Send,
+        user: UserModel<Created>,
     ) -> Result<UserModel<Saved>, FormaError> {
         let account_id = parse_object_id(account_id)?;
 
@@ -207,11 +207,9 @@ impl AccountRepositoryBlueprint for MongodbAdaptor {
             "cannot start transaction",
         )?;
 
-        let user_model = user.into();
-
         let res = self
             .user_collection
-            .insert_one(user_model.document()?)
+            .insert_one(user.document()?)
             .session(&mut session)
             .await
             .map_mongo_forma_err(
@@ -256,7 +254,7 @@ impl AccountRepositoryBlueprint for MongodbAdaptor {
                 FormaErrorDatabase::TransactionError,
                 "cannot commit transaction",
             )?;
-            Ok(user_model.with_id(user_id))
+            Ok(user.with_id(user_id))
         }
     }
 
@@ -355,18 +353,16 @@ impl TokenRepositoryBlueprint for MongodbAdaptor {
 
     async fn create_session(
         &self,
-        session: impl Into<SessionModel<Created>> + Send,
+        session: SessionModel<Created>,
     ) -> Result<SessionModel<Saved>, FormaError> {
-        let session_model = session.into();
-
         let res = self
             .session_collection
-            .insert_one(session_model.document()?)
+            .insert_one(session.document()?)
             .await
             .map_mongo_forma_err(FormaErrorDatabase::InsertError, "cannot insert session")?;
 
         if let Some(id) = res.inserted_id.as_object_id() {
-            Ok(session_model.with_id(id))
+            Ok(session.with_id(id))
         } else {
             Err(FormaError::new(
                 FormaErrorDatabase::InsertError,
