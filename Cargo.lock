@@ -38,12 +38,12 @@ name = "api-gateway"
 version = "1.0.0"
 dependencies = [
  "async-trait",
+ "auth-service",
  "axum",
  "axum-extra",
  "axum-reverse-proxy",
  "dynfmt",
  "forma-core",
- "forma-schema",
  "reqwest",
  "serde",
  "serde_json",
@@ -107,7 +107,7 @@ dependencies = [
  "bb8",
  "chrono",
  "forma-core",
- "forma-schema",
+ "forma-proc-macro",
  "futures",
  "jsonwebtoken",
  "mongodb",
@@ -116,6 +116,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "strum",
  "thiserror",
  "tokio",
  "url",
@@ -220,6 +221,7 @@ dependencies = [
  "cookie",
  "futures-core",
  "futures-util",
+ "headers",
  "http",
  "http-body",
  "http-body-util",
@@ -922,26 +924,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "forma-schema"
-version = "0.2.0"
-dependencies = [
- "forma-core",
- "forma-proc-macro",
- "mongodb",
- "reqwest",
- "serde",
- "serde_json",
- "uuid",
- "woothee",
-]
-
-[[package]]
 name = "formatine-operator"
 version = "0.1.0"
 dependencies = [
  "axum",
  "forma-core",
- "forma-schema",
  "serde",
  "tokio",
 ]
@@ -952,7 +939,6 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "forma-core",
- "forma-schema",
  "serde",
  "tokio",
 ]
@@ -963,7 +949,6 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "forma-core",
- "forma-schema",
  "serde",
  "tokio",
 ]
@@ -1153,6 +1138,36 @@ dependencies = [
  "byteorder",
  "num-traits",
 ]
+
+[[package]]
+name = "headers"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc2700e3fe555c3310aa7286cac6167449f2c87e0eb58769c9208a1c58a1d106"
+dependencies = [
+ "base64 0.22.1",
+ "bytes",
+ "headers-core",
+ "http",
+ "httpdate",
+ "mime",
+ "sha1 0.10.7",
+]
+
+[[package]]
+name = "headers-core"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "54b4a22553d4242c49fddb9ba998a99962b5cc6f22cb5a3482bec22522403ce4"
+dependencies = [
+ "http",
+]
+
+[[package]]
+name = "heck"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
 name = "hex"
@@ -1509,7 +1524,6 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "forma-core",
- "forma-schema",
  "serde",
  "tokio",
 ]
@@ -1520,7 +1534,6 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "forma-core",
- "forma-schema",
  "serde",
  "tokio",
 ]
@@ -1646,7 +1659,6 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "forma-core",
- "forma-schema",
  "serde",
  "tokio",
 ]
@@ -1744,7 +1756,6 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "forma-core",
- "forma-schema",
  "serde",
  "tokio",
 ]
@@ -1889,7 +1900,6 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "forma-core",
- "forma-schema",
  "serde",
  "tokio",
 ]
@@ -1912,7 +1922,6 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "forma-core",
- "forma-schema",
  "serde",
  "tokio",
 ]
@@ -2012,7 +2021,6 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "forma-core",
- "forma-schema",
  "serde",
  "tokio",
 ]
@@ -2060,7 +2068,6 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "forma-core",
- "forma-schema",
  "serde",
  "tokio",
 ]
@@ -2829,6 +2836,27 @@ name = "strsim"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
+
+[[package]]
+name = "strum"
+version = "0.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9628de9b8791db39ceda2b119bbe13134770b56c138ec1d3af810d045c04f9bd"
+dependencies = [
+ "strum_macros",
+]
+
+[[package]]
+name = "strum_macros"
+version = "0.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab85eea0270ee17587ed4156089e10b9e6880ee688791d45a905f5b1ca36f664"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
 
 [[package]]
 name = "subtle"

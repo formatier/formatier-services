@@ -11,7 +11,6 @@ members = [
 
     "forma-core",
     "forma-proc-macro",
-    "forma-schema",
 
     "services/auth-service",
     "services/forum-service",
@@ -46,8 +45,9 @@ rayon = "1.12.0"
 reqwest = { version = "0.13.5", features = ["json"] }
 
 forma-core = { path = "./forma-core" }
-forma-schema = { path = "./forma-schema" }
 forma-proc-macro = { path = "./forma-proc-macro" }
+
+auth-service = { path = "./services/auth-service" }
 
 [profile.release]
 debug = false

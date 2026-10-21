@@ -2,13 +2,12 @@ use std::sync::Arc;
 
 use crate::domain::entities::{
     AccessTokenClaims, Audience, InitializationTokenClaims, Issuer, LatestSession,
-    RefreshTokenClaims, Session, SessionModelPairs, SessionV1, TokenClaims,
+    RefreshTokenClaims, SessionModelPairs, TokenClaims,
 };
 use chrono::{DateTime, TimeDelta, Utc};
-use forma_core::domain::entities::{
-    FormaError, FormaErrorAuth, FormaErrorConverter, FormaErrorExt, SavedModel,
-};
+use forma_core::domain::entities::{FormaError, FormaErrorAuth, FormaErrorConverter, SavedModel};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -82,14 +81,11 @@ impl TokenService {
         Ok(decoded.claims)
     }
 
-    pub async fn issue_tokens_and_create_session(
+    pub async fn create_session(
         &self,
         account_id: &str,
-        user_id: &str,
-        email: &str,
-        scope: &[&str],
         user_agent: LatestSession,
-    ) -> Result<(String, String), FormaError> {
+    ) -> Result<ObjectId, FormaError> {
         let session_metadata = self
             .token_repository
             .create_session_metadata(account_id)
@@ -109,6 +105,17 @@ impl TokenService {
             .create_token_data(&session.id().to_hex())
             .await?;
 
+        Ok(session.id())
+    }
+
+    pub async fn issue_tokens(
+        &self,
+        session_id: &str,
+        account_id: &str,
+        user_id: &str,
+        email: &str,
+        scope: &[&str],
+    ) -> Result<(String, String), FormaError> {
         let access_token = self.encode_token(
             TokenClaims {
                 issuer: Issuer::Formatier,
@@ -122,7 +129,7 @@ impl TokenService {
                 expiration_time: (Utc::now() + TimeDelta::days(4)).into(),
                 issue_at: Utc::now().into(),
                 claims: AccessTokenClaims {
-                    session_id: session.id().to_hex(),
+                    session_id: session_id.into(),
                     account_id: account_id.into(),
                     email: email.into(),
                     user_id: user_id.into(),
@@ -145,7 +152,7 @@ impl TokenService {
                 expiration_time: (Utc::now() + TimeDelta::days(4)).into(),
                 issue_at: Utc::now().into(),
                 claims: RefreshTokenClaims {
-                    session_id: session.id().to_hex(),
+                    session_id: session_id.into(),
                 },
             },
             TokenType::Refresh,

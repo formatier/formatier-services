@@ -96,14 +96,18 @@ impl UseCase {
                         FormaErrorAuth::InvalidUserAgent,
                         "cannot parse user-agent",
                     ))?;
+            let session_id = self
+                .token_service
+                .create_session(&account_id, user_agent.into())
+                .await?;
             let (access_token, refresh_token) = self
                 .token_service
-                .issue_tokens_and_create_session(
+                .issue_tokens(
+                    &session_id.to_hex(),
                     &account_id,
                     &user_id.to_hex(),
                     &account.email,
                     &["all"],
-                    user_agent.into(),
                 )
                 .await?;
 
@@ -128,7 +132,7 @@ impl UseCase {
             Err(FormaError::new(
                 FormaErrorAuth::TokenExpired,
                 "refresh token expired",
-            ));
+            ))
         } else {
             if self
                 .token_service
@@ -146,6 +150,20 @@ impl UseCase {
     }
 
     pub async fn refresh_token(&self, refresh_token: &str) -> Result<(String, String), FormaError> {
+        let (expired, token_claims) = self
+            .token_service
+            .parse_token::<RefreshTokenClaims>(refresh_token, TokenType::Refresh)
+            .await?;
+        if expired {
+            return Err(FormaError::new(
+                FormaErrorAuth::TokenExpired,
+                "refresh token expired",
+            ));
+        }
+
+        self.token_service.refresh_tokens(&token_claims.claims.session_id);
+
+        self.token_service.issue_tokens(session_id, account_id, user_id, email, scope)
     }
 
     pub async fn get_account(&self, account_id: &str) -> Result<AccountModel<Saved>, FormaError> {

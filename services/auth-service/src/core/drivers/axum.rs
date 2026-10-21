@@ -8,6 +8,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde::Serialize;
+use axum_extra::{TypedHeader, headers::UserAgent};
 
 use crate::{
     core::use_cases::UseCase,
@@ -37,10 +38,11 @@ pub struct AxumDriver {
 pub async fn signin_by_oauth_provider(
     State(state): State<Arc<AxumDriver>>,
     req: Json<SigninByOAuthProviderV1Request>,
+    TypedHeader(user_agent): TypedHeader<UserAgent>,
 ) -> impl IntoResponse {
     match state
         .use_case
-        .signin_by_oauth_provider(req.provider.into(), &req.auth_code, &req.user_agent)
+        .signin_by_oauth_provider(req.provider.into(), &req.auth_code, user_agent.as_str())
         .await
     {
         Ok((access_token, refresh_token)) => JsonResponse(
