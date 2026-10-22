@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{AccountV1, UserV1};
+use super::{Account, User};
 
 use super::Provider;
 
@@ -40,13 +40,13 @@ pub struct SigninByPasswordlessV1Request {
 
 #[derive(Serialize, Deserialize)]
 pub struct SigninV1Reply {
-    pub account: AccountV1,
-    pub user: Option<UserV1>,
+    pub account: Account,
+    pub user: Option<User>,
     pub auth_token: Box<str>,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct AccountV1Reply {
-    pub account: AccountV1,
-    pub user: UserV1,
+    pub account: Account,
+    pub user: User,
 }

@@ -31,6 +31,8 @@ async-trait = "0.1.92"
 sha2 = "0.11.0"
 chrono = "0.4.45"
 mongodb = { version = "3.9.1", features = ["bson-3"] }
+bson = "3.1.0"
+surrealdb = "3.3.4"
 futures = "0.3.34"
 redis = { version = "1.7.1", features = [
     "bb8",

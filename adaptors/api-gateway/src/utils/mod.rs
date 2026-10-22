@@ -7,7 +7,7 @@ use forma_core::domain::entities::{
 use crate::domain::entities::Config;
 
 pub fn load_config() -> Result<Config, FormaError> {
-    let mut file = fs::File::open("./deployment/config/route.yml")
+    let mut file = fs::File::open("./route.yml")
         .map_forma_err(FormaErrorKind::Internal, "cannot open route config")?;
     let mut raw_yml = String::new();
 

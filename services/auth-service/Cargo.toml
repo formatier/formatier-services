@@ -21,7 +21,7 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 uuid = { workspace = true }
 async-trait = { workspace = true }
-mongodb = { workspace = true }
+surrealdb = { workspace = true }
 futures = { workspace = true }
 chrono = { workspace = true }
 redis = { workspace = true }

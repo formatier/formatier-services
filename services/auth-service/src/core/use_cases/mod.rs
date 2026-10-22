@@ -1,8 +1,8 @@
 use std::{collections::HashMap, sync::Arc};
 
 use crate::domain::entities::{
-    AccessTokenClaims, AccountMetadata, AccountModel, AccountModelPairs, AccountV1,
-    AccountV1Provider, Provider, RefreshTokenClaims, TokenClaims,
+    AccessTokenClaims, AccountMetadata, AccountModel, AccountModelPairs, Account,
+    AccountProvider, Provider, RefreshTokenClaims, TokenClaims,
 };
 use forma_core::domain::entities::{FormaError, FormaErrorAuth, Saved, SavedModel};
 
@@ -65,11 +65,11 @@ impl UseCase {
                 self.repository
                     .create_account(
                         AccountModelPairs {
-                            data: AccountV1 {
+                            data: Account {
                                 email: oauth_user_info.email,
                                 providers: HashMap::from([(
                                     provider,
-                                    AccountV1Provider {
+                                    AccountProvider {
                                         provider_id: oauth_user_info.provider_id,
                                     },
                                 )]),

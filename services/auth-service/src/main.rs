@@ -9,7 +9,7 @@ use mongodb::options::ClientOptions;
 use tokio::net::TcpListener;
 
 use crate::core::{
-    adaptors::{GoogleOAuthApi, MongodbAdaptor, RedisAdaptor},
+    adaptors::{GoogleOAuthApi, SurrealdbAdaptor, RedisAdaptor},
     drivers::AxumDriver,
     use_cases::UseCase,
 };
@@ -24,10 +24,6 @@ mod value_objects;
 async fn main() {
     let google_oauth_adaptor = Arc::new(GoogleOAuthApi::new());
     let github_oauth_adaptor = Arc::new(GoogleOAuthApi::new());
-
-    let mongo_client_opt = ClientOptions::parse("").await.unwrap();
-    let mongo_conn = mongodb::Client::with_options(mongo_client_opt).unwrap();
-    let mongodb_adaptor = Arc::new(MongodbAdaptor::new(mongo_conn.database(AUTH_DB_KEY)));
 
     let redis_client = redis::Client::open(value_objects::CACHE_URL.to_string()).unwrap();
     let redis_conn = bb8::Pool::builder()

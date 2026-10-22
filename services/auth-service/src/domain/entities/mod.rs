@@ -5,9 +5,9 @@ use forma_core::{
     inline_mod,
 };
 use forma_proc_macro::serde_migrator;
-use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
+use surrealdb::types::RecordId;
 
 inline_mod!(oauth);
 inline_mod!(dto);
@@ -37,21 +37,21 @@ impl Display for Provider {
 }
 
 #[derive(Serialize, Deserialize, Default)]
-pub struct AccountV1 {
+pub struct Account {
     pub email: String,
     pub user_name: Option<String>,
     pub password: Option<String>,
 
-    pub providers: HashMap<Provider, AccountV1Provider>,
+    pub providers: HashMap<Provider, AccountProvider>,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct AccountV1Provider {
+pub struct AccountProvider {
     pub provider_id: String,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct UserV1 {
+pub struct User {
     pub display_name: String,
     pub name: Option<String>,
     pub middle_name: Option<String>,
@@ -60,18 +60,18 @@ pub struct UserV1 {
     pub profile_bucket_id: Option<String>,
     pub formatier_verified: bool,
 
-    pub badge: Box<[BadgeV1]>,
+    pub badge: Box<[Badge]>,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct BadgeV1 {
+pub struct Badge {
     pub name: String,
     pub description: Option<String>,
-    pub category: CategoryV1,
+    pub category: Category,
 }
 
 #[derive(Serialize, Deserialize)]
-pub enum CategoryV1 {
+pub enum Category {
     Achievement,
     Event,
     Challenge,
@@ -139,7 +139,7 @@ pub enum Issuer {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct SessionV1 {
+pub struct Session {
     pub os: String,
     pub os_version: String,
     pub browser: String,
@@ -147,7 +147,7 @@ pub struct SessionV1 {
     pub vendor: String,
 }
 
-impl From<woothee::parser::WootheeResult<'_>> for SessionV1 {
+impl From<woothee::parser::WootheeResult<'_>> for Session {
     fn from(value: woothee::parser::WootheeResult) -> Self {
         Self {
             os: value.os.into(),
@@ -159,30 +159,12 @@ impl From<woothee::parser::WootheeResult<'_>> for SessionV1 {
     }
 }
 
-serde_migrator! {
-    #[derive(Serialize, Deserialize)]
-    pub Account
-    "v1": AccountV1;
-}
-
-serde_migrator! {
-    #[derive(Serialize, Deserialize)]
-    pub User
-    "v1": UserV1;
-}
-
-serde_migrator! {
-    #[derive(Serialize, Deserialize)]
-    pub Session
-    "v1": SessionV1;
-}
-
 #[derive(Serialize, Deserialize, Default)]
 pub struct AccountMetadata {
     pub create_at: Timestamp<BsonTime>,
     pub update_at: Timestamp<BsonTime>,
 
-    pub user_id: Option<ObjectId>,
+    pub user_id: Option<RecordId>,
 }
 
 #[derive(Serialize, Deserialize, Default)]
@@ -191,12 +173,12 @@ pub struct UserMetadata {
     pub update_at: Timestamp<BsonTime>,
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize)]
 pub struct SessionMetadata {
     pub create_at: Timestamp<BsonTime>,
     pub update_at: Timestamp<BsonTime>,
 
-    pub account_id: ObjectId,
+    pub account_id: RecordId,
 }
 
 pub type AccountModel<S> = Model<Account, AccountMetadata, S>;

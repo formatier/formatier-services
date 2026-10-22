@@ -1,13 +1,12 @@
 use std::sync::Arc;
 
 use crate::domain::entities::{
-    AccessTokenClaims, Audience, InitializationTokenClaims, Issuer, LatestSession,
+    AccessTokenClaims, Audience, InitializationTokenClaims, Issuer,
     RefreshTokenClaims, SessionModelPairs, TokenClaims,
 };
 use chrono::{DateTime, TimeDelta, Utc};
 use forma_core::domain::entities::{FormaError, FormaErrorAuth, FormaErrorConverter, SavedModel};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
-use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 
 use crate::{
