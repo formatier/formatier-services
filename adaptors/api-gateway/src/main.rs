@@ -1,3 +1,4 @@
+//! API gateway executable entry point.
 mod core;
 mod domain;
 mod factory;
@@ -9,6 +10,11 @@ use forma_core::utils::init_rustls;
 use std::sync::Arc;
 
 #[tokio::main]
+/// Loads configuration and starts the API gateway HTTP server.
+///
+/// # Panics
+/// Panics if initialization, configuration loading, listener binding, or
+/// serving fails.
 async fn main() {
     init_rustls();
 

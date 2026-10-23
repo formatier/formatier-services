@@ -1,3 +1,4 @@
+//! Key-stone service executable entry point.
 use std::sync::Arc;
 
 use crate::{core::drivers, factory::make_router};
@@ -6,6 +7,10 @@ mod core;
 mod factory;
 
 #[tokio::main]
+/// Starts the HTTP server and serves key-stone service routes.
+///
+/// # Panics
+/// Panics if the listener cannot be bound or the server fails.
 async fn main() {
     let axum_driver = drivers::AxumDriver;
     let router = make_router(Arc::new(axum_driver));

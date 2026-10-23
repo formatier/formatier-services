@@ -1,3 +1,4 @@
+//! Builds the API gateway router from its route configuration.
 use crate::{
     core::drivers::{self, AuthMiddlewareState, AxumDriver, auth_middleware}, domain::entities::{AuthStrategy, Config},
 };
@@ -13,6 +14,18 @@ use reqwest::{Method};
 use std::{collections::HashMap, sync::Arc};
 use tower_http::cors::CorsLayer;
 
+/// Builds a router from upstream, route, proxy, and middleware configuration.
+///
+/// # Arguments
+/// * `config` - Gateway configuration describing upstreams and routes.
+/// * `driver` - Shared driver state used by route middleware.
+///
+/// # Returns
+/// A router containing all configured proxy routes and middleware.
+///
+/// # Errors
+/// Returns a [`FormaError`] if configuration references are missing or CORS
+/// values cannot be parsed.
 pub fn build_api_route_v1(
     config: Config,
     driver: Arc<AxumDriver>,

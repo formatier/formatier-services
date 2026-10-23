@@ -1,3 +1,7 @@
+//! Google OAuth HTTP client implementation.
+//!
+//! This adapter exchanges authorization codes for tokens and retrieves
+//! identity information for authenticated users.
 use async_trait::async_trait;
 use axum::http::{HeaderMap, HeaderValue};
 use forma_core::domain::entities::{
@@ -12,11 +16,16 @@ use crate::{
     value_objects,
 };
 
+/// HTTP adapter for Google's OAuth and OpenID Connect endpoints.
 pub struct GoogleOAuthApi {
     client: reqwest::Client,
 }
 
 impl GoogleOAuthApi {
+    /// Creates an adapter with a new Reqwest client.
+    ///
+    /// # Returns
+    /// A Google OAuth API adapter.
     pub fn new() -> Self {
         let client = reqwest::Client::new();
         Self { client }
@@ -25,6 +34,17 @@ impl GoogleOAuthApi {
 
 #[async_trait]
 impl OAuthBlueprint for GoogleOAuthApi {
+    /// Exchanges an authorization code for an OAuth token.
+    ///
+    /// # Arguments
+    /// * `code` - The authorization code issued by Google.
+    ///
+    /// # Returns
+    /// The parsed OAuth token.
+    ///
+    /// # Errors
+    /// Returns a [`FormaError`] if URL construction, the HTTP request, or
+    /// response parsing fails.
     async fn exchange_code(&self, code: &str) -> Result<OAuthToken, FormaError> {
         let mut google_api_url = url::Url::parse(value_objects::GOOGLE_OAUTH_TOKEN_EXCHANGE_URL)
             .map_forma_err(
@@ -64,6 +84,16 @@ impl OAuthBlueprint for GoogleOAuthApi {
         Ok(res.into())
     }
 
+    /// Retrieves the Google user profile authorized by an OAuth token.
+    ///
+    /// # Arguments
+    /// * `token` - The OAuth token used to authorize the request.
+    ///
+    /// # Returns
+    /// The parsed user identity information.
+    ///
+    /// # Errors
+    /// Returns a [`FormaError`] if the HTTP request or response parsing fails.
     async fn get_authorized_user(&self, token: &OAuthToken) -> Result<OAuthUserInfo, FormaError> {
         let mut headers = HeaderMap::new();
         headers.insert(

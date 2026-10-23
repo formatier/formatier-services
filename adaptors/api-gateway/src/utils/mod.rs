@@ -1,3 +1,4 @@
+//! Helpers for loading API gateway configuration.
 use std::{fs, io::Read};
 
 use forma_core::domain::entities::{
@@ -6,6 +7,13 @@ use forma_core::domain::entities::{
 
 use crate::domain::entities::Config;
 
+/// Loads and parses the gateway configuration from `./route.yml`.
+///
+/// # Returns
+/// The parsed gateway configuration.
+///
+/// # Errors
+/// Returns a [`FormaError`] if the file cannot be opened, read, or parsed.
 pub fn load_config() -> Result<Config, FormaError> {
     let mut file = fs::File::open("./route.yml")
         .map_forma_err(FormaErrorKind::Internal, "cannot open route config")?;

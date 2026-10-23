@@ -1,3 +1,4 @@
+//! Contracts for authentication providers, repositories, and token caches.
 use forma_core::inline_mod;
 
 inline_mod!(cache_database);

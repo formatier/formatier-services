@@ -1,3 +1,4 @@
+//! Axum middleware and HTTP handlers for the API gateway.
 use auth_service::domain::entities::AppAuthenticateV1Reply;
 use axum::{
     Json,
@@ -12,16 +13,31 @@ use std::sync::Arc;
 
 use crate::domain::{blueprints::ServiceBlueprint, entities::AuthStrategy};
 
+/// Holds adapters shared by API gateway handlers.
 pub struct AxumDriver {
     service_adapter: Arc<dyn ServiceBlueprint + Send + Sync>,
 }
 
 impl AxumDriver {
+    /// Creates a driver using the supplied service adapter.
+    ///
+    /// # Arguments
+    /// * `service_adapter` - Service operations shared with request handlers.
+    ///
+    /// # Returns
+    /// An API gateway driver.
     pub fn new(service_adapter: Arc<dyn ServiceBlueprint + Send + Sync>) -> Self {
         Self { service_adapter }
     }
 }
 
+/// Returns the names of cookies present in the incoming request.
+///
+/// # Arguments
+/// * `jar` - Cookies extracted from the request.
+///
+/// # Returns
+/// A JSON array containing cookie names.
 pub async fn get_cookies(
     State(_state): State<Arc<AxumDriver>>,
     jar: CookieJar,
@@ -34,11 +50,27 @@ pub async fn get_cookies(
     Json(cookies_name)
 }
 
+/// Holds the driver and authentication policy used by the middleware.
 pub struct AuthMiddlewareState {
+    /// API gateway state used to contact the authentication service.
     pub state: Arc<AxumDriver>,
+    /// Policy controlling whether a missing token is allowed.
     pub auth_strategy: AuthStrategy,
 }
 
+/// Authenticates a request when its configured policy requires a token.
+///
+/// A validated identity is forwarded to downstream handlers through request
+/// headers.
+///
+/// # Arguments
+/// * `state` - Shared authentication middleware configuration.
+/// * `req` - Incoming HTTP request.
+/// * `next` - Remaining middleware and handler chain.
+///
+/// # Returns
+/// The downstream response, or an HTTP error response when authentication
+/// fails.
 pub async fn auth_middleware(
     State(state): State<Arc<AuthMiddlewareState>>,
     mut req: Request,

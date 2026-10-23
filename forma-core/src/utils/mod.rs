@@ -1,5 +1,7 @@
+//! General-purpose helpers shared by Formatier services.
 use crate::domain::entities::{FormaError, FormaErrorApp, FormaErrorConverter};
 
+/// Declares modules and re-exports their contents from the current module.
 #[macro_export]
 macro_rules! inline_mod {
     ($($name:ident), + $(,)?) => {
@@ -10,6 +12,10 @@ macro_rules! inline_mod {
 }
 
 #[macro_export]
+/// Declares a string constant selected by the build profile.
+///
+/// Debug builds use the development value; optimized builds use the production
+/// value.
 macro_rules! use_env {
     ($name:ident, $dev_env:expr, $prod_env:expr) => {
         #[cfg(not(debug_assertions))]
@@ -20,11 +26,26 @@ macro_rules! use_env {
     };
 }
 
+/// Parses a string-like value as a UUID.
+///
+/// # Arguments
+/// * `s` - The UUID text to parse.
+///
+/// # Returns
+/// The parsed UUID.
+///
+/// # Errors
+/// Returns a [`FormaError`] if the input is not a valid UUID.
 pub fn string_to_uuid(s: impl Into<String>) -> Result<uuid::Uuid, FormaError> {
     uuid::Uuid::parse_str(s.into().as_str())
         .map_forma_err(FormaErrorApp::InvalidType, "cannot parse string to uuid")
 }
 
+/// Installs the default Rustls cryptographic provider.
+///
+/// # Panics
+/// Panics if the provider cannot be installed, including when another provider
+/// has already been installed.
 pub fn init_rustls() {
     rustls::crypto::ring::default_provider()
         .install_default()

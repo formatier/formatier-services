@@ -1,3 +1,4 @@
+//! Legacy MongoDB adapter implementation retained as commented reference code.
 /*use std::collections::HashMap;
 
 use crate::domain::{

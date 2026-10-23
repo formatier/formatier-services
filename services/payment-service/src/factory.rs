@@ -1,9 +1,17 @@
+//! HTTP route construction for the payment service.
 use std::sync::Arc;
 
 use axum::{Router, routing::get};
 
 use crate::core::drivers::{self, AxumDriver};
 
+/// Builds the payment router and attaches shared driver state.
+///
+/// # Arguments
+/// * `axum_driver_state` - State shared with route handlers.
+///
+/// # Returns
+/// The configured payment service router.
 pub fn make_router(axum_driver_state: Arc<AxumDriver>) -> Router {
     let router = Router::new().route("/healtz", get(drivers::healtz));
 

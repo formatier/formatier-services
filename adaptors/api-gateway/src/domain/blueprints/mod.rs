@@ -1,3 +1,4 @@
+//! Contracts for communicating with upstream services.
 use auth_service::domain::entities::{AppAuthenticateV1Reply, AppAuthenticateV1Request};
 use forma_core::{
     domain::entities::{
@@ -8,6 +9,17 @@ use forma_core::{
 };
 use url::Url;
 
+/// Deserializes a service response body into its success or error result.
+///
+/// # Arguments
+/// * `res` - HTTP response returned by the upstream service.
+///
+/// # Returns
+/// The decoded success value.
+///
+/// # Errors
+/// Returns a [`FormaError`] if the response body cannot be decoded or contains
+/// an error reply.
 async fn into_result<T>(res: reqwest::Response) -> Result<T, FormaError>
 where
     T: for<'de> serde::Deserialize<'de>,
@@ -22,10 +34,30 @@ where
 }
 
 #[async_trait::async_trait]
+/// Defines common HTTP operations for the authentication service.
 pub trait AuthServiceBlueprint {
+    /// Returns the base URL of the authentication service.
+    ///
+    /// # Returns
+    /// The service URL.
     fn get_url(&self) -> Url;
+
+    /// Returns the client used to make authentication-service requests.
+    ///
+    /// # Returns
+    /// A shared reference to the HTTP client.
     fn get_client(&self) -> &reqwest::Client;
 
+    /// Validates an access token through the authentication service.
+    ///
+    /// # Arguments
+    /// * `access_token` - Token to validate.
+    ///
+    /// # Returns
+    /// The authenticated account and user identifiers.
+    ///
+    /// # Errors
+    /// Returns a [`FormaError`] if the upstream request or response fails.
     async fn app_authenticate_v1(
         &self,
         access_token: &str,
@@ -56,4 +88,5 @@ pub trait AuthServiceBlueprint {
     }
 }
 
+/// Combines authentication-service operations with the gateway service contract.
 pub trait ServiceBlueprint: AuthServiceBlueprint {}

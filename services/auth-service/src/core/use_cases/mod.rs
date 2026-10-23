@@ -1,3 +1,4 @@
+//! Application workflows coordinating OAuth, persistence, and token services.
 use std::{collections::HashMap, sync::Arc};
 
 use crate::domain::entities::{
@@ -14,6 +15,7 @@ use crate::{
     },
 };
 
+/// Coordinates authentication use cases across provider and storage adapters.
 pub struct UseCase {
     google_oauth: Arc<dyn OAuthBlueprint + Send + Sync>,
     github_oauth: Arc<dyn OAuthBlueprint + Send + Sync>,
@@ -22,6 +24,16 @@ pub struct UseCase {
 }
 
 impl UseCase {
+    /// Creates a use case with OAuth, repository, and token-cache dependencies.
+    ///
+    /// # Arguments
+    /// * `google_oauth` - Adapter for Google OAuth operations.
+    /// * `github_oauth` - Adapter for GitHub OAuth operations.
+    /// * `repository` - Account and session persistence operations.
+    /// * `token_cache` - Cache operations for session token state.
+    ///
+    /// # Returns
+    /// An authentication use case configured with its token service.
     pub fn new(
         google_oauth: Arc<dyn OAuthBlueprint + Send + Sync>,
         github_oauth: Arc<dyn OAuthBlueprint + Send + Sync>,
@@ -37,6 +49,19 @@ impl UseCase {
         }
     }
 
+    /// Signs in or begins account initialization through an OAuth provider.
+    ///
+    /// # Arguments
+    /// * `provider` - OAuth provider used for sign-in.
+    /// * `code` - Authorization code issued by the provider.
+    /// * `user_agent` - Request user-agent string used to initialize sessions.
+    ///
+    /// # Returns
+    /// The issued access or initialization token and an optional refresh token.
+    ///
+    /// # Errors
+    /// Returns a [`FormaError`] if provider authorization, account persistence,
+    /// user-agent parsing, or token issuance fails.
     pub async fn signin_by_oauth_provider(
         &self,
         provider: Provider,
@@ -119,6 +144,17 @@ impl UseCase {
         }
     }
 
+    /// Decodes an access token and checks its session status.
+    ///
+    /// # Arguments
+    /// * `access_token` - Encoded access token to validate.
+    ///
+    /// # Returns
+    /// The validated access-token claims.
+    ///
+    /// # Errors
+    /// Returns a [`FormaError`] if validation fails, the token is expired, or
+    /// its session is revoked.
     pub async fn decode_token(
         &self,
         access_token: &str,
@@ -149,6 +185,16 @@ impl UseCase {
         }
     }
 
+    /// Validates a refresh token and issues replacement access and refresh tokens.
+    ///
+    /// # Arguments
+    /// * `refresh_token` - Encoded refresh token to validate.
+    ///
+    /// # Returns
+    /// A tuple containing the replacement access token and refresh token.
+    ///
+    /// # Errors
+    /// Returns a [`FormaError`] if validation or token refresh fails.
     pub async fn refresh_token(&self, refresh_token: &str) -> Result<(String, String), FormaError> {
         let (expired, token_claims) = self
             .token_service
@@ -166,6 +212,16 @@ impl UseCase {
         self.token_service.issue_tokens(session_id, account_id, user_id, email, scope)
     }
 
+    /// Retrieves an account by identifier.
+    ///
+    /// # Arguments
+    /// * `account_id` - Account identifier.
+    ///
+    /// # Returns
+    /// The saved account model.
+    ///
+    /// # Errors
+    /// Returns a [`FormaError`] if the repository lookup fails.
     pub async fn get_account(&self, account_id: &str) -> Result<AccountModel<Saved>, FormaError> {
         let account_model = self.repository.get_account(account_id).await?;
         account_model
