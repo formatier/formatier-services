@@ -1,5 +1,4 @@
 //! Generic request, reply, saga, and health-check data transfer objects.
-//!
 //! These types centralize the JSON wire shapes shared by service boundaries.
 use super::{ChronoTime, FormaError, FormaErrorApp, FormaErrorConverter, Timestamp};
 use serde::{Deserialize, Serialize};
@@ -17,25 +16,16 @@ pub enum ResultReply<T> {
 
 impl<T> ResultReply<T> {
     /// Reports whether this reply contains a successful value.
-    ///
-    /// # Returns
-    /// `true` for [`ResultReply::Success`] and `false` otherwise.
     pub fn is_success(&self) -> bool {
         matches!(self, ResultReply::Success(_))
     }
 
     /// Reports whether this reply contains an application error.
-    ///
-    /// # Returns
-    /// `true` for [`ResultReply::Error`] and `false` otherwise.
     pub fn is_error(&self) -> bool {
         matches!(self, ResultReply::Error(_))
     }
 
     /// Converts this reply into the corresponding standard result.
-    ///
-    /// # Returns
-    /// The success value or the contained [`FormaError`].
     pub fn into_result(self) -> Result<T, FormaError> {
         match self {
             ResultReply::Success(value) => Ok(value),
@@ -46,9 +36,6 @@ impl<T> ResultReply<T> {
 
 impl<T> Into<Result<T, FormaError>> for ResultReply<T> {
     /// Converts this reply into the corresponding standard result.
-    ///
-    /// # Returns
-    /// The success value or the contained [`FormaError`].
     fn into(self) -> Result<T, FormaError> {
         self.into_result()
     }
@@ -67,12 +54,6 @@ where
     T: Serialize,
 {
     /// Serializes the request payload as JSON.
-    ///
-    /// # Returns
-    /// The serialized JSON string.
-    ///
-    /// # Errors
-    /// Returns a [`FormaError`] when the payload cannot be serialized.
     pub fn into_string(self) -> Result<String, FormaError> {
         let data = serde_json::to_string(&self.data)
             .map_forma_err(FormaErrorApp::InvalidType, "failed to serialize data")?;

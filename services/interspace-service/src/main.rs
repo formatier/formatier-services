@@ -8,9 +8,6 @@ mod factory;
 
 #[tokio::main]
 /// Starts the HTTP server and serves interspace service routes.
-///
-/// # Panics
-/// Panics if the listener cannot be bound or the server fails.
 async fn main() {
     let axum_driver = drivers::AxumDriver;
     let router = make_router(Arc::new(axum_driver));

@@ -20,24 +20,11 @@ pub struct AxumDriver {
 
 impl AxumDriver {
     /// Creates a driver using the supplied service adapter.
-    ///
-    /// # Arguments
-    /// * `service_adapter` - Service operations shared with request handlers.
-    ///
-    /// # Returns
-    /// An API gateway driver.
     pub fn new(service_adapter: Arc<dyn ServiceBlueprint + Send + Sync>) -> Self {
         Self { service_adapter }
     }
 }
 
-/// Returns the names of cookies present in the incoming request.
-///
-/// # Arguments
-/// * `jar` - Cookies extracted from the request.
-///
-/// # Returns
-/// A JSON array containing cookie names.
 pub async fn get_cookies(
     State(_state): State<Arc<AxumDriver>>,
     jar: CookieJar,
@@ -59,18 +46,7 @@ pub struct AuthMiddlewareState {
 }
 
 /// Authenticates a request when its configured policy requires a token.
-///
-/// A validated identity is forwarded to downstream handlers through request
-/// headers.
-///
-/// # Arguments
-/// * `state` - Shared authentication middleware configuration.
-/// * `req` - Incoming HTTP request.
-/// * `next` - Remaining middleware and handler chain.
-///
-/// # Returns
-/// The downstream response, or an HTTP error response when authentication
-/// fails.
+/// A validated identity is forwarded to downstream handlers through request headers.
 pub async fn auth_middleware(
     State(state): State<Arc<AuthMiddlewareState>>,
     mut req: Request,
@@ -120,7 +96,7 @@ pub async fn auth_middleware(
                         StatusCode::INTERNAL_SERVER_ERROR,
                         Json(FormaError::new(
                             FormaErrorKind::Unhandled,
-                            "cannot parse account_id or user_id to HeaderValue in api-gateway",
+                            "Could not parse account_id or user_id as a HeaderValue in the API gateway",
                         )),
                     )
                         .into_response();
@@ -140,7 +116,7 @@ pub async fn auth_middleware(
                     StatusCode::UNAUTHORIZED,
                     Json(FormaError::new(
                         FormaErrorAuth::TokenInvalid,
-                        "tokens are not exits",
+                        "No valid token was provided",
                     )),
                 )
                     .into_response();

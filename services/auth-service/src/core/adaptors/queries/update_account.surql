@@ -1,0 +1,1 @@
+UPDATE $account_key MERGE $data_to_patch RETURN NONE

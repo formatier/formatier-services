@@ -1,13 +1,10 @@
-//! Procedural macros for generating versioned serialization migrations.
-//!
-//! The `serde_migrator` macro builds a version enum and conversion chain from
-//! a list of versioned types supplied by the caller.
+//! Versioned serialization migration macros.
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::{Attribute, Ident, LitStr, Token, Visibility, parse::Parse, parse_macro_input};
 
 #[derive(Clone)]
-/// Represents one schema version and its serialized version tag.
+/// Stores a schema version and its tag.
 struct MigratorChunk {
     version_tag: LitStr,
     _colon_token: Token![:],
@@ -17,9 +14,6 @@ struct MigratorChunk {
 
 impl Parse for MigratorChunk {
     /// Parses a version tag, separator, type name, and terminator.
-    ///
-    /// # Errors
-    /// Returns a syntax error if the input does not match the expected form.
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         Ok(MigratorChunk {
             version_tag: input.parse()?,
@@ -30,7 +24,7 @@ impl Parse for MigratorChunk {
     }
 }
 
-/// Represents the complete input accepted by [`serde_migrator`].
+/// Stores the input accepted by [`serde_migrator`].
 struct MigratorInput {
     attr: Vec<Attribute>,
     vis: Visibility,
@@ -40,9 +34,6 @@ struct MigratorInput {
 
 impl Parse for MigratorInput {
     /// Parses the attributes, visibility, generated type name, and version list.
-    ///
-    /// # Errors
-    /// Returns a syntax error if any input component is malformed.
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let attr = input.call(Attribute::parse_outer)?;
         let vis: Visibility = if input.peek(Token![pub]) {
@@ -69,17 +60,6 @@ impl Parse for MigratorInput {
 
 #[proc_macro]
 /// Generates a versioned enum and migration method for a sequence of schemas.
-///
-/// The generated migration method converts each older schema through each
-/// subsequent version and reports whether a conversion occurred.
-///
-/// # Arguments
-/// * `token` - Attributes, visibility, enum name, and versioned schema types.
-///
-/// # Returns
-/// Tokens defining the version enum, migration implementation, `From`
-/// conversions, and latest-version type alias. Empty version lists expand to
-/// no tokens.
 pub fn serde_migrator(token: TokenStream) -> TokenStream {
     let input = parse_macro_input!(token as MigratorInput);
 
@@ -116,13 +96,7 @@ pub fn serde_migrator(token: TokenStream) -> TokenStream {
 
         from_impls.push(quote! {
             impl From<#enum_name> for #name {
-                #[doc = "Wraps this schema value in the generated version enum."]
-                #[doc = ""]
-                #[doc = "# Arguments"]
-                #[doc = "* `value` - Schema value to wrap."]
-                #[doc = ""]
-                #[doc = "# Returns"]
-                #[doc = "The generated version enum containing `value`."]
+                #[doc = "Wraps this schema value in the version enum."]
                 fn from(value: #enum_name) -> Self {
                     Self::#enum_name(value)
                 }
@@ -168,9 +142,6 @@ pub fn serde_migrator(token: TokenStream) -> TokenStream {
 
         impl #name {
             #[doc = "Migrates this value to the latest schema version."]
-            #[doc = ""]
-            #[doc = "# Returns"]
-            #[doc = "The latest schema value and a flag indicating whether migration occurred."]
             pub fn migrate(self) -> (#last_enum_name, bool) {
                 match self {
                     #(#match_arms)*

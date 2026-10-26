@@ -40,15 +40,6 @@ pub enum Scheme {
 /// Formats the scheme using its URL spelling.
 impl Display for Scheme {
     /// Writes the URL scheme to a formatter.
-    ///
-    /// # Arguments
-    /// * `f` - Destination formatter.
-    ///
-    /// # Returns
-    /// The formatter result.
-    ///
-    /// # Errors
-    /// Returns a formatting error if writing fails.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Scheme::Http => {

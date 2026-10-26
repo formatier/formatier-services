@@ -6,12 +6,6 @@ use axum::{Router, routing::get};
 use crate::core::drivers::{self, AxumDriver};
 
 /// Builds the operator router and attaches shared driver state.
-///
-/// # Arguments
-/// * `axum_driver_state` - State shared with route handlers.
-///
-/// # Returns
-/// The configured operator router.
 pub fn make_router(axum_driver_state: Arc<AxumDriver>) -> Router {
     let router = Router::new().route("/healtz", get(drivers::healtz));
 

@@ -1,8 +1,7 @@
 //! SurrealDB record models and value conversion helpers.
-//!
-//! Marker states distinguish newly created tables from persisted tables that
-//! must carry a record identifier.
-use std::marker::PhantomData;
+//! SurrealDB table models and conversion helpers.
+use rustls::crypto::hash::Hash;
+use std::{collections::HashMap, marker::PhantomData};
 use surrealdb::types::{Error as SurrealError, Kind, RecordId, SurrealValue, Value};
 
 use crate::domain::entities::{Created, Saved, TableState};
@@ -17,9 +16,36 @@ struct Record<T: SurrealValue, M: SurrealValue> {
     metadata: M,
 }
 
+pub enum UpdaterMode<K: 'static> {
+    Include(&'static [K]),
+    Exclude(&'static [K]),
+}
+
+pub trait UpdaterFilter<K: PartialEq + 'static> {
+    const FILTER: UpdaterMode<K>;
+
+    fn filter_iter<J, V, I>(iter: I) -> impl Iterator<Item = (J, V)>
+    where
+        J: PartialEq<K>,
+        I: Iterator<Item = (J, V)>,
+    {
+        let (keys, if_key_listed) = match Self::FILTER {
+            UpdaterMode::Include(keys) => (keys, true),
+            UpdaterMode::Exclude(keys) => (keys, false),
+        };
+
+        iter.filter(move |(j, _)| keys.iter().any(|k| j == k) == if_key_listed)
+    }
+}
+
 /// Represents a SurrealDB record with a type-level persistence state.
 #[derive(Clone)]
-pub struct Table<T, M, S> {
+pub struct Table<T, M, S>
+where
+    T: SurrealValue + Clone,
+    M: SurrealValue + Clone,
+    S: TableState,
+{
     id: Option<RecordId>,
     /// The table's domain data.
     pub data: T,
@@ -28,27 +54,22 @@ pub struct Table<T, M, S> {
     _state: PhantomData<S>,
 }
 
-impl<T: SurrealValue, M: SurrealValue, S: TableState> SurrealValue for Table<T, M, S> {
-    /// Returns the SurrealDB value kind represented by this table.
+impl<T, M, S> SurrealValue for Table<T, M, S>
+where
+    T: SurrealValue + Clone,
+    M: SurrealValue + Clone,
+    S: TableState,
+{
     fn kind_of() -> Kind {
         Record::<T, M>::kind_of()
     }
 
     /// Checks whether a value can be represented by this table.
-    ///
-    /// # Arguments
-    /// * `value` - The SurrealDB value to inspect.
-    ///
-    /// # Returns
-    /// `true` if the value matches the record representation.
     fn is_value(value: &Value) -> bool {
         Record::<T, M>::is_value(value)
     }
 
     /// Converts this table into its SurrealDB value representation.
-    ///
-    /// # Returns
-    /// The encoded record value.
     fn into_value(self) -> Value {
         Record {
             id: self.id,
@@ -59,22 +80,12 @@ impl<T: SurrealValue, M: SurrealValue, S: TableState> SurrealValue for Table<T, 
     }
 
     /// Decodes a SurrealDB value into a table in the requested state.
-    ///
-    /// # Arguments
-    /// * `value` - The value to decode.
-    ///
-    /// # Returns
-    /// The decoded table.
-    ///
-    /// # Errors
-    /// Returns a SurrealDB error if decoding fails or a saved table has no
-    /// record identifier.
     fn from_value(value: Value) -> Result<Self, SurrealError> {
         let Record { id, data, metadata } = Record::<T, M>::from_value(value)?;
 
         if S::HAS_ID && id.is_none() {
             return Err(SurrealError::thrown(
-                "saved Table is missing its record id".to_string(),
+                "saved table is missing its record ID".to_string(),
             ));
         }
 
@@ -87,7 +98,11 @@ impl<T: SurrealValue, M: SurrealValue, S: TableState> SurrealValue for Table<T, 
     }
 }
 
-impl<T: Default, M: Default> Default for Table<T, M, Created> {
+impl<T: Default, M: Default> Default for Table<T, M, Created>
+where
+    T: SurrealValue + Clone,
+    M: SurrealValue + Clone,
+{
     /// Creates an unsaved table with default data and metadata.
     fn default() -> Self {
         Self {
@@ -99,57 +114,41 @@ impl<T: Default, M: Default> Default for Table<T, M, Created> {
     }
 }
 
-impl<T: SurrealValue, M: SurrealValue> From<TablePairs<T, M>> for Table<T, M, Created> {
+impl<T, M> From<TablePairs<T, M>> for Table<T, M, Created>
+where
+    T: SurrealValue + Clone,
+    M: SurrealValue + Clone,
+{
     /// Converts data and metadata into an unsaved table.
-    ///
-    /// # Arguments
-    /// * `pairs` - Data and metadata for the new table.
-    ///
-    /// # Returns
-    /// A table in the [`Created`] state.
     fn from(pairs: TablePairs<T, M>) -> Self {
         Self::from_pairs(pairs)
     }
 }
 
 /// Constructs unsaved tables and transitions them into the saved state.
-pub trait CreatedTable<T: SurrealValue, M: SurrealValue> {
+pub trait CreatedTable<T, M>
+where
+    T: SurrealValue + Clone,
+    M: SurrealValue + Clone,
+{
     /// Builds a table from its data and metadata.
-    ///
-    /// # Arguments
-    /// * `pairs` - The table data and metadata.
-    ///
-    /// # Returns
-    /// A table in the [`Created`] state.
     fn from_pairs(pairs: TablePairs<T, M>) -> Table<T, M, Created>;
 
     /// Assigns a record identifier and transitions the table to [`Saved`].
-    ///
-    /// # Arguments
-    /// * `id` - The SurrealDB record identifier.
-    ///
-    /// # Returns
-    /// The table in the saved state.
     fn with_id(self, id: RecordId) -> Table<T, M, Saved>;
 }
 
 /// Provides access to the identifier of a persisted table.
 pub trait SavedTable<T, M> {
-    /// Returns a reference to the table's record identifier.
-    ///
-    /// # Returns
-    /// A reference to the persisted record identifier.
     fn id(&self) -> &RecordId;
 }
 
-impl<T: SurrealValue, M: SurrealValue> CreatedTable<T, M> for Table<T, M, Created> {
+impl<T, M> CreatedTable<T, M> for Table<T, M, Created>
+where
+    T: SurrealValue + Clone,
+    M: SurrealValue + Clone,
+{
     /// Builds an unsaved table from its data and metadata.
-    ///
-    /// # Arguments
-    /// * `pairs` - Data and metadata for the new table.
-    ///
-    /// # Returns
-    /// A table in the [`Created`] state.
     fn from_pairs(pairs: TablePairs<T, M>) -> Table<T, M, Created> {
         Table::<T, M, Created> {
             id: None,
@@ -160,12 +159,6 @@ impl<T: SurrealValue, M: SurrealValue> CreatedTable<T, M> for Table<T, M, Create
     }
 
     /// Assigns a record identifier and transitions the table to [`Saved`].
-    ///
-    /// # Arguments
-    /// * `id` - SurrealDB record identifier for the persisted table.
-    ///
-    /// # Returns
-    /// The table in the saved state.
     fn with_id(self, id: RecordId) -> Table<T, M, Saved> {
         Table::<T, M, Saved> {
             id: Some(id),
@@ -176,11 +169,11 @@ impl<T: SurrealValue, M: SurrealValue> CreatedTable<T, M> for Table<T, M, Create
     }
 }
 
-impl<T, M> SavedTable<T, M> for Table<T, M, Saved> {
-    /// Returns a reference to the table's record identifier.
-    ///
-    /// # Returns
-    /// The identifier assigned to this saved table.
+impl<T, M> SavedTable<T, M> for Table<T, M, Saved>
+where
+    T: SurrealValue + Clone,
+    M: SurrealValue + Clone,
+{
     fn id(&self) -> &RecordId {
         self.id
             .as_ref()
@@ -191,9 +184,6 @@ impl<T, M> SavedTable<T, M> for Table<T, M, Saved> {
 /// Converts a cloneable value into a SurrealDB value.
 pub trait ToSurrealValue {
     /// Converts this value into its SurrealDB representation.
-    ///
-    /// # Returns
-    /// The converted value.
     fn surreal_value(&self) -> Value;
 }
 
@@ -202,17 +192,18 @@ where
     T: SurrealValue + Clone,
 {
     /// Converts this value into its SurrealDB representation.
-    ///
-    /// # Returns
-    /// The converted SurrealDB value.
     fn surreal_value(&self) -> Value {
         self.clone().into_value()
     }
 }
 
 /// Holds data and metadata used to construct a SurrealDB table.
-#[derive(SurrealValue, Default)]
-pub struct TablePairs<T: SurrealValue, M: SurrealValue> {
+#[derive(SurrealValue, Default, Clone)]
+pub struct TablePairs<T, M>
+where
+    T: SurrealValue + Clone,
+    M: SurrealValue + Clone,
+{
     #[surreal(flatten)]
     /// The table's domain data.
     pub data: T,

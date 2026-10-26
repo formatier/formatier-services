@@ -13,12 +13,6 @@ pub struct GoogleOAuthTokenExchange {
 /// Converts Google's token response to the provider-neutral token type.
 impl Into<OAuthToken> for GoogleOAuthTokenExchange {
     /// Builds an [`OAuthToken`] from the response fields.
-    ///
-    /// # Arguments
-    /// * `self` - Google's token-exchange response.
-    ///
-    /// # Returns
-    /// The provider-neutral token.
     fn into(self) -> OAuthToken {
         OAuthToken {
             access_token: self.access_token,
@@ -45,12 +39,6 @@ pub struct GoogleOpenIDUserInfo {
 /// Converts a Google identity response to the provider-neutral profile type.
 impl Into<OAuthUserInfo> for GoogleOpenIDUserInfo {
     /// Maps Google's response fields to the common OAuth identity.
-    ///
-    /// # Arguments
-    /// * `self` - Google's OpenID user information.
-    ///
-    /// # Returns
-    /// A provider-neutral OAuth user profile.
     fn into(self) -> OAuthUserInfo {
         OAuthUserInfo {
             provider_id: self.sub,

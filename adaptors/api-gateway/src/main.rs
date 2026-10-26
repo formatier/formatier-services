@@ -11,10 +11,6 @@ use std::sync::Arc;
 
 #[tokio::main]
 /// Loads configuration and starts the API gateway HTTP server.
-///
-/// # Panics
-/// Panics if initialization, configuration loading, listener binding, or
-/// serving fails.
 async fn main() {
     init_rustls();
 

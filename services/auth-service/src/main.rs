@@ -23,10 +23,6 @@ mod value_objects;
 
 #[tokio::main]
 /// Initializes dependencies, configures HTTP routing, and serves requests.
-///
-/// # Panics
-/// Panics if required configuration is invalid or the listener cannot be
-/// bound or served.
 async fn main() {
     let google_oauth_adaptor = Arc::new(GoogleOAuthApi::new());
     let github_oauth_adaptor = Arc::new(GoogleOAuthApi::new());

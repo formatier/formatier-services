@@ -2,12 +2,15 @@
 use std::{collections::HashMap, fmt::Display};
 
 use forma_core::{
-    domain::entities::{BsonTime, ChronoTime, Model, ModelPairs, SurrealTime, Table, TablePairs, Timestamp}, inline_mod,
+    domain::entities::{
+        BsonTime, ChronoTime, Model, ModelPairs, SurrealTime, Table, TablePairs, Timestamp,
+        UpdaterFilter, UpdaterMode,
+    },
+    inline_mod,
 };
-use forma_proc_macro::serde_migrator;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
-use surrealdb::types::RecordId;
+use surrealdb::types::{RecordId, SurrealValue, Value};
 
 inline_mod!(oauth);
 inline_mod!(dto);
@@ -24,58 +27,49 @@ pub enum TokenType {
     Initialization,
 }
 
-#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Default, SurrealValue, Clone)]
+/// Stores an account's core profile and linked OAuth identities.
+pub struct Account {
+    /// Primary email address for the account.
+    pub email: String,
+    /// Email verification status.
+    pub email_verified: bool,
+    /// Optional account display name.
+    pub user_name: Option<String>,
+    /// Optional password credential.
+    pub password: Option<String>,
+}
+
+pub struct AccountUpdaterFilter;
+impl UpdaterFilter<&'static str> for AccountUpdaterFilter {
+    const FILTER: UpdaterMode<&str> = UpdaterMode::Include(&["user_name"]);
+}
+
+#[derive(Serialize, Deserialize, SurrealValue, Copy, Clone)]
 #[serde(rename_all = "lowercase")]
+#[surreal(rename_all = "lowercase")]
 /// Identifies an external OAuth provider.
-pub enum Provider {
+pub enum ProviderIdent {
     /// Google OAuth provider.
     Google,
     /// GitHub OAuth provider.
     Github,
 }
 
-/// Formats a provider using its lowercase wire identifier.
-impl Display for Provider {
-    /// Writes the provider identifier to the formatter.
-    ///
-    /// # Arguments
-    /// * `f` - Destination formatter.
-    ///
-    /// # Returns
-    /// The formatter result.
-    ///
-    /// # Errors
-    /// Returns a formatting error if writing to `f` fails.
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Provider::Google => write!(f, "google"),
-            Provider::Github => write!(f, "github"),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Default)]
-/// Stores an account's core profile and linked OAuth identities.
-pub struct Account {
-    /// Primary email address for the account.
-    pub email: String,
-    /// Optional account display name.
-    pub user_name: Option<String>,
-    /// Optional password credential.
-    pub password: Option<String>,
-
-    /// OAuth identities linked to this account.
-    pub providers: HashMap<Provider, AccountProvider>,
-}
-
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, SurrealValue, Clone)]
+#[serde(tag = "type", rename_all = "lowercase")]
+#[surreal(tag = "type", rename_all = "lowercase")]
 /// Stores the provider-specific identifier linked to an account.
-pub struct AccountProvider {
-    /// User identifier assigned by the OAuth provider.
-    pub provider_id: String,
+pub struct Provider {
+    /// Identifies an external OAuth provider.
+    pub provider: ProviderIdent,
+    /// Email verification status.
+    pub email_verified: bool,
+    /// Provider email that user has.
+    pub email: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, SurrealValue, Clone)]
 /// Stores a user's public profile and badges.
 pub struct User {
     /// Name displayed for the user.
@@ -92,12 +86,15 @@ pub struct User {
     pub profile_bucket_id: Option<String>,
     /// Indicates whether the profile is verified by Formatier.
     pub formatier_verified: bool,
-
-    /// Badges currently associated with the user.
-    pub badge: Box<[Badge]>,
 }
 
-#[derive(Serialize, Deserialize)]
+pub struct UserUpdaterFilter;
+impl UpdaterFilter<&'static str> for UserUpdaterFilter {
+    const FILTER: UpdaterMode<&str> =
+        UpdaterMode::Exclude(&["formatier_verified", "profile_bucket_id"]);
+}
+
+#[derive(Serialize, Deserialize, SurrealValue, Clone)]
 /// Describes a badge awarded or assigned to a user.
 pub struct Badge {
     /// Badge name.
@@ -108,7 +105,7 @@ pub struct Badge {
     pub category: Category,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, SurrealValue, Clone)]
 /// Classifies a user badge.
 pub enum Category {
     /// Badge awarded for a general achievement.
@@ -206,7 +203,7 @@ pub enum Issuer {
     Formatier,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, SurrealValue, Clone)]
 /// Captures user-agent attributes associated with a session.
 pub struct Session {
     /// Operating system name.
@@ -224,12 +221,6 @@ pub struct Session {
 /// Converts parsed Woothee user-agent data into a session record.
 impl From<woothee::parser::WootheeResult<'_>> for Session {
     /// Maps the parser's fields to the session representation.
-    ///
-    /// # Arguments
-    /// * `value` - Parsed user-agent attributes.
-    ///
-    /// # Returns
-    /// A session containing the parsed attributes.
     fn from(value: woothee::parser::WootheeResult) -> Self {
         Self {
             os: value.os.into(),
@@ -241,7 +232,7 @@ impl From<woothee::parser::WootheeResult<'_>> for Session {
     }
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, SurrealValue, Clone)]
 /// Stores account timestamps and its optional associated user identifier.
 pub struct AccountMetadata {
     /// Account creation timestamp.
@@ -250,10 +241,10 @@ pub struct AccountMetadata {
     pub update_at: Timestamp<SurrealTime>,
 
     /// Identifier of the user initialized for this account, if any.
-    pub user_id: Option<RecordId>,
+    pub user: Option<RecordId>,
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, SurrealValue, Clone)]
 /// Stores creation and update timestamps for a user.
 pub struct UserMetadata {
     /// User creation timestamp.
@@ -262,7 +253,7 @@ pub struct UserMetadata {
     pub update_at: Timestamp<SurrealTime>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, SurrealValue, Clone)]
 /// Stores session timestamps and the owning account identifier.
 pub struct SessionMetadata {
     /// Session creation timestamp.
@@ -271,7 +262,19 @@ pub struct SessionMetadata {
     pub update_at: Timestamp<SurrealTime>,
 
     /// Identifier of the account that owns the session.
-    pub account_id: RecordId,
+    pub account: RecordId,
+}
+
+#[derive(Serialize, Deserialize, SurrealValue, Clone)]
+/// Stores session timestamps and the owning account identifier.
+pub struct ProviderMetadata {
+    /// Session creation timestamp.
+    pub create_at: Timestamp<SurrealTime>,
+    /// Timestamp of the most recent session update.
+    pub update_at: Timestamp<SurrealTime>,
+
+    /// Identifier of the account that owns the session.
+    pub account: RecordId,
 }
 
 /// Account table parameterized by its persistence state.
@@ -280,6 +283,10 @@ pub type AccountTable<S> = Table<Account, AccountMetadata, S>;
 pub type UserTable<S> = Table<User, UserMetadata, S>;
 /// Session table parameterized by its persistence state.
 pub type SessionTable<S> = Table<Session, SessionMetadata, S>;
+/// Provider table parameterized by its persistence state.
+pub type ProviderTable<S> = Table<Provider, ProviderMetadata, S>;
+// Badge table parameterized by its persistence state.
+//pub type BadgeTable<S> = Table<Badge, BadgeMetadata, S>;
 
 /// Data and metadata used to construct an account table.
 pub type AccountTablePairs = TablePairs<Account, AccountMetadata>;
@@ -287,3 +294,7 @@ pub type AccountTablePairs = TablePairs<Account, AccountMetadata>;
 pub type UserTablePairs = TablePairs<User, UserMetadata>;
 /// Data and metadata used to construct a session table.
 pub type SessionTablePairs = TablePairs<Session, SessionMetadata>;
+/// Data and metadata used to construct a provider table.
+pub type ProviderTablePairs = TablePairs<Provider, ProviderMetadata>;
+// Data and metadata used to construct a badge table.
+//pub type BadgeTablePairs = TablePairs<Badge, BadgeMetadata>;

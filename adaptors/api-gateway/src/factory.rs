@@ -15,17 +15,6 @@ use std::{collections::HashMap, sync::Arc};
 use tower_http::cors::CorsLayer;
 
 /// Builds a router from upstream, route, proxy, and middleware configuration.
-///
-/// # Arguments
-/// * `config` - Gateway configuration describing upstreams and routes.
-/// * `driver` - Shared driver state used by route middleware.
-///
-/// # Returns
-/// A router containing all configured proxy routes and middleware.
-///
-/// # Errors
-/// Returns a [`FormaError`] if configuration references are missing or CORS
-/// values cannot be parsed.
 pub fn build_api_route_v1(
     config: Config,
     driver: Arc<AxumDriver>,
@@ -77,7 +66,7 @@ pub fn build_api_route_v1(
                         .map(|v| {
                             v.parse().map_forma_err(
                                 FormaErrorApp::InvalidType,
-                                "Fail to parse allowed headers list",
+                                "Failed to parse the allowed headers list",
                             )
                         })
                         .try_collect::<Vec<HeaderName>>()?,
@@ -88,7 +77,7 @@ pub fn build_api_route_v1(
                         .map(|v| {
                             v.parse().map_forma_err(
                                 FormaErrorApp::InvalidType,
-                                "Fail to parse allowed method list",
+                                "Failed to parse the allowed methods list",
                             )
                         })
                         .try_collect::<Vec<Method>>()?,
@@ -99,7 +88,7 @@ pub fn build_api_route_v1(
                         .map(|v| {
                             v.parse().map_forma_err(
                                 FormaErrorApp::InvalidType,
-                                "Fail to parse allowed origins list",
+                                "Failed to parse the allowed origins list",
                             )
                         })
                         .try_collect::<Vec<HeaderValue>>()?,

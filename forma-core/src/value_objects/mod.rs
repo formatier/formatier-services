@@ -12,19 +12,10 @@ pub enum RuntimeEnvironment {
 }
 
 /// Reads and trims a string-valued environment variable.
-///
-/// # Arguments
-/// * `key` - The environment variable name.
-///
-/// # Returns
-/// The variable value with surrounding double-quote characters removed.
-///
-/// # Errors
-/// Returns a [`FormaError`] if the variable is not set or cannot be read.
 pub fn get_env(key: &str) -> Result<String, FormaError> {
     env::var(key)
         .map(|v| v.trim_matches('"').into())
-        .map_forma_err(FormaErrorKind::Internal, "cannot load env")
+        .map_forma_err(FormaErrorKind::Internal, "cannot load environment variable")
 }
 
 #[cfg(debug_assertions)]

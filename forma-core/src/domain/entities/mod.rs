@@ -1,9 +1,9 @@
 //! Shared domain entities, persistence markers, timestamps, and error types.
-//!
-//! This module defines common wire and storage representations used by the
-//! service workspace, including typed persistence states and error conversion.
+//! Shared types and persistence helpers for Formatier services.
 use std::{
-    error::Error, fmt::{Debug, Display}, marker::PhantomData,
+    error::Error,
+    fmt::{Debug, Display},
+    marker::PhantomData,
 };
 
 use axum::{http::StatusCode, response::IntoResponse};
@@ -53,16 +53,6 @@ impl<'de> Visitor<'de> for ChronoTime {
     type Value = chrono::DateTime<Utc>;
 
     /// Converts a millisecond timestamp into a UTC date-time.
-    ///
-    /// # Arguments
-    /// * `v` - Timestamp in milliseconds since the Unix epoch.
-    ///
-    /// # Returns
-    /// The corresponding UTC date-time.
-    ///
-    /// # Errors
-    /// Returns a deserialization error if the timestamp is outside Chrono's
-    /// supported range.
     fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
     where
         E: serde::de::Error,
@@ -72,15 +62,6 @@ impl<'de> Visitor<'de> for ChronoTime {
     }
 
     /// Describes the value expected by this visitor.
-    ///
-    /// # Arguments
-    /// * `formatter` - Formatter that receives the expectation description.
-    ///
-    /// # Returns
-    /// The formatter result.
-    ///
-    /// # Errors
-    /// Returns a formatting error if writing the description fails.
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(formatter, "cannot parse timestamp")
     }
@@ -110,15 +91,6 @@ impl<T> Default for Timestamp<T> {
 
 impl<T> Timestamp<T> {
     /// Constructs a timestamp from milliseconds since the Unix epoch.
-    ///
-    /// # Arguments
-    /// * `timestamp` - Millisecond timestamp to validate and store.
-    ///
-    /// # Returns
-    /// A timestamp using the selected serialization format.
-    ///
-    /// # Errors
-    /// Returns [`FormaError`] if the value is outside Chrono's supported range.
     pub fn from_timestamp(timestamp: i64) -> Result<Self, FormaError> {
         Ok(Self(
             TimestampInner {
@@ -136,12 +108,6 @@ impl<T> Timestamp<T> {
 
 impl<T> From<bson::DateTime> for Timestamp<T> {
     /// Converts a BSON date-time to the shared millisecond representation.
-    ///
-    /// # Arguments
-    /// * `value` - BSON date-time to convert.
-    ///
-    /// # Returns
-    /// The converted timestamp.
     fn from(value: bson::DateTime) -> Self {
         Timestamp::<T>(
             TimestampInner {
@@ -154,9 +120,6 @@ impl<T> From<bson::DateTime> for Timestamp<T> {
 
 impl<T> Into<bson::DateTime> for Timestamp<T> {
     /// Converts this timestamp to a BSON date-time.
-    ///
-    /// # Returns
-    /// The BSON date-time represented by this timestamp.
     fn into(self) -> bson::DateTime {
         bson::DateTime::from_millis(self.0.timestamp)
     }
@@ -164,12 +127,6 @@ impl<T> Into<bson::DateTime> for Timestamp<T> {
 
 impl<T> From<DateTime<Utc>> for Timestamp<T> {
     /// Converts a UTC date-time to the shared millisecond representation.
-    ///
-    /// # Arguments
-    /// * `value` - UTC date-time to convert.
-    ///
-    /// # Returns
-    /// The converted timestamp.
     fn from(value: DateTime<Utc>) -> Self {
         Timestamp::<T>(
             TimestampInner {
@@ -182,9 +139,6 @@ impl<T> From<DateTime<Utc>> for Timestamp<T> {
 
 impl<T> Into<chrono::DateTime<Utc>> for Timestamp<T> {
     /// Converts this timestamp to a UTC date-time.
-    ///
-    /// # Returns
-    /// The UTC date-time represented by this timestamp.
     fn into(self) -> chrono::DateTime<Utc> {
         chrono::DateTime::from_timestamp_millis(self.0.timestamp).unwrap()
     }
@@ -192,15 +146,6 @@ impl<T> Into<chrono::DateTime<Utc>> for Timestamp<T> {
 
 impl Serialize for Timestamp<BsonTime> {
     /// Serializes this timestamp using BSON date-time encoding.
-    ///
-    /// # Arguments
-    /// * `serializer` - Serializer receiving the BSON date-time.
-    ///
-    /// # Returns
-    /// The serializer's success value.
-    ///
-    /// # Errors
-    /// Returns the serializer's error if encoding fails.
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -212,15 +157,6 @@ impl Serialize for Timestamp<BsonTime> {
 
 impl<'de> Deserialize<'de> for Timestamp<BsonTime> {
     /// Deserializes a BSON date-time into a timestamp.
-    ///
-    /// # Arguments
-    /// * `deserializer` - Deserializer providing the BSON date-time.
-    ///
-    /// # Returns
-    /// The decoded timestamp.
-    ///
-    /// # Errors
-    /// Returns the deserializer's error if decoding fails.
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -232,15 +168,6 @@ impl<'de> Deserialize<'de> for Timestamp<BsonTime> {
 
 impl Serialize for Timestamp<ChronoTime> {
     /// Serializes this timestamp as an integer millisecond value.
-    ///
-    /// # Arguments
-    /// * `serializer` - Serializer receiving the integer value.
-    ///
-    /// # Returns
-    /// The serializer's success value.
-    ///
-    /// # Errors
-    /// Returns the serializer's error if encoding fails.
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -251,16 +178,6 @@ impl Serialize for Timestamp<ChronoTime> {
 
 impl<'de> Deserialize<'de> for Timestamp<ChronoTime> {
     /// Deserializes an integer millisecond timestamp.
-    ///
-    /// # Arguments
-    /// * `deserializer` - Deserializer providing the integer value.
-    ///
-    /// # Returns
-    /// The decoded timestamp.
-    ///
-    /// # Errors
-    /// Returns the deserializer's error if decoding or timestamp validation
-    /// fails.
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -272,15 +189,6 @@ impl<'de> Deserialize<'de> for Timestamp<ChronoTime> {
 
 impl Serialize for Timestamp<SurrealTime> {
     /// Serializes this timestamp as an integer millisecond value.
-    ///
-    /// # Arguments
-    /// * `serializer` - Serializer receiving the integer value.
-    ///
-    /// # Returns
-    /// The serializer's success value.
-    ///
-    /// # Errors
-    /// Returns the serializer's error if encoding fails.
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -291,16 +199,6 @@ impl Serialize for Timestamp<SurrealTime> {
 
 impl<'de> Deserialize<'de> for Timestamp<SurrealTime> {
     /// Deserializes an integer millisecond timestamp.
-    ///
-    /// # Arguments
-    /// * `deserializer` - Deserializer providing the integer value.
-    ///
-    /// # Returns
-    /// The decoded timestamp.
-    ///
-    /// # Errors
-    /// Returns the deserializer's error if decoding or timestamp validation
-    /// fails.
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -311,34 +209,20 @@ impl<'de> Deserialize<'de> for Timestamp<SurrealTime> {
 }
 
 impl SurrealValue for Timestamp<SurrealTime> {
-    /// Returns the SurrealDB kind used for the timestamp.
     fn kind_of() -> Kind {
         Kind::Datetime
     }
 
     /// Converts the timestamp to a SurrealDB value.
-    ///
-    /// # Returns
-    /// The SurrealDB date-time value.
     fn into_value(self) -> types::Value {
         let date_time = DateTime::from_timestamp_millis(self.0.timestamp).unwrap();
         date_time.into_value()
     }
 
     /// Decodes a SurrealDB value as a timestamp.
-    ///
-    /// # Arguments
-    /// * `value` - SurrealDB value to decode.
-    ///
-    /// # Returns
-    /// The decoded timestamp.
-    ///
-    /// # Errors
-    /// Returns a SurrealDB error if the value is not a date-time.
     fn from_value(value: types::Value) -> Result<Self, surrealdb::Error> {
         Ok(Self::from(DateTime::<Utc>::from_value(value)?))
     }
-
 }
 
 #[derive(thiserror::Error, Clone, Serialize, Deserialize, Default)]
@@ -407,15 +291,6 @@ pub struct IntenalInfo {
 /// Formats the error and its internal diagnostics for debugging.
 impl Debug for FormaError {
     /// Writes the serialized error payload and internal diagnostic detail.
-    ///
-    /// # Arguments
-    /// * `f` - Formatter receiving the debug representation.
-    ///
-    /// # Returns
-    /// The formatter result.
-    ///
-    /// # Errors
-    /// Returns a formatting error if output writing fails.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(
             f,
@@ -432,13 +307,6 @@ impl Debug for FormaError {
 
 impl FormaError {
     /// Creates an error from a kind and message.
-    ///
-    /// # Arguments
-    /// * `kind` - Error category convertible to [`FormaErrorKind`].
-    /// * `message` - Human-readable error message.
-    ///
-    /// # Returns
-    /// A `FormaError` with default optional fields.
     pub fn new<T: Into<FormaErrorKind>>(kind: T, message: impl Into<String>) -> Self {
         Self {
             kind: kind.into(),
@@ -448,14 +316,6 @@ impl FormaError {
     }
 
     /// Creates an error with optional structured details.
-    ///
-    /// # Arguments
-    /// * `kind` - Error category convertible to [`FormaErrorKind`].
-    /// * `message` - Human-readable error message.
-    /// * `detail` - Optional structured error detail.
-    ///
-    /// # Returns
-    /// A `FormaError` containing the supplied details.
     pub fn new_with_detail<T: Into<FormaErrorKind>>(
         kind: T,
         message: &str,
@@ -470,9 +330,6 @@ impl FormaError {
     }
 
     /// Maps this error kind to its HTTP status code.
-    ///
-    /// # Returns
-    /// The status code corresponding to the public error category.
     pub fn get_status(&self) -> StatusCode {
         match &self.kind {
             FormaErrorKind::FormaError(err) => match err {
@@ -510,9 +367,6 @@ impl FormaError {
     }
 
     /// Converts this error into an HTTP response.
-    ///
-    /// # Returns
-    /// A response containing the serialized error and its mapped status.
     pub fn response(self) -> impl IntoResponse {
         let body = serde_json::to_string(&self).unwrap();
         axum::http::Response::builder()
@@ -522,30 +376,31 @@ impl FormaError {
     }
 }
 
+pub trait FormaErrorFlattener<T> {
+    fn flatten_forma(self) -> Result<T, FormaError>;
+}
+
+impl<T> FormaErrorFlattener<T> for Result<Option<T>, FormaError> {
+    fn flatten_forma(self) -> Result<T, FormaError> {
+        self.transpose().ok_or_forma_error().flatten()
+    }
+}
+
+impl<T> FormaErrorFlattener<T> for Option<Result<T, FormaError>> {
+    fn flatten_forma(self) -> Result<T, FormaError> {
+        self.ok_or_forma_error().flatten()
+    }
+}
+
 /// Converts arbitrary errors into [`FormaError`] values.
 pub trait FormaErrorConverter<T> {
     /// Maps an error to a public kind and fixed message.
-    ///
-    /// # Arguments
-    /// * `kind` - Public error category.
-    /// * `message` - Message exposed to the caller.
-    ///
-    /// # Returns
-    /// The original success value or a converted [`FormaError`].
     fn map_forma_err<K: Into<FormaErrorKind>>(
         self,
         kind: K,
         message: &str,
     ) -> Result<T, FormaError>;
     /// Maps an error to a public kind and attaches optional structured detail.
-    ///
-    /// # Arguments
-    /// * `kind` - Public error category.
-    /// * `message` - Message prefix exposed to the caller.
-    /// * `detail` - Structured detail associated with the error.
-    ///
-    /// # Returns
-    /// The original success value or a converted [`FormaError`].
     fn map_forma_err_with_detail<K: Into<FormaErrorKind>, D: Into<Option<FormaErrorDetail>>>(
         self,
         kind: K,
@@ -607,18 +462,9 @@ where
 /// Converts optional values into results using standard `FormaError` values.
 pub trait FormaOptionConverter<T> {
     /// Converts `None` into a default option error.
-    ///
-    /// # Returns
-    /// The contained value or a [`FormaError`] when the option is empty.
     fn ok_or_forma_error(self) -> Result<T, FormaError>;
 
     /// Converts `None` into an option error with optional details.
-    ///
-    /// # Arguments
-    /// * `detail` - Optional structured error detail.
-    ///
-    /// # Returns
-    /// The contained value or a [`FormaError`] when the option is empty.
     fn ok_or_forma_error_with_detail(
         self,
         detail: impl Into<Option<FormaErrorDetail>>,
@@ -650,15 +496,9 @@ impl<T> FormaOptionConverter<T> for Option<T> {
 /// Adds common handling behavior to results containing [`FormaError`].
 pub trait FormaErrorExt<T> {
     /// Raises internal diagnostic severity to panic level.
-    ///
-    /// # Returns
-    /// The original result with updated diagnostics on error.
     fn with_service_breaker_request(self) -> Result<T, FormaError>;
 
     /// Marks an error so saga handling can treat it as non-saga-related.
-    ///
-    /// # Returns
-    /// The original result with `non_saga_error` set on error.
     fn non_saga_error(self) -> Result<T, FormaError>;
 }
 
@@ -686,27 +526,12 @@ impl<T> FormaErrorExt<T> for Result<T, FormaError> {
 /// Converts MongoDB errors into [`FormaError`] values.
 pub trait FormaErrorMongoExt<T> {
     /// Maps a MongoDB error to the supplied public kind and message.
-    ///
-    /// # Arguments
-    /// * `kind` - Public error category.
-    /// * `message` - Message exposed to the caller.
-    ///
-    /// # Returns
-    /// The original success value or a converted [`FormaError`].
     fn map_mongo_forma_err<K: Into<FormaErrorKind>>(
         self,
         kind: K,
         message: &str,
     ) -> Result<T, FormaError>;
     /// Maps a MongoDB error and attaches optional structured details.
-    ///
-    /// # Arguments
-    /// * `kind` - Public error category.
-    /// * `message` - Message exposed to the caller.
-    /// * `detail` - Optional structured error detail.
-    ///
-    /// # Returns
-    /// The original success value or a converted [`FormaError`].
     fn map_mongo_forma_err_with_detail<K: Into<FormaErrorKind>>(
         self,
         kind: K,
@@ -750,27 +575,12 @@ impl<T> FormaErrorMongoExt<T> for Result<T, mongodb::error::Error> {
 /// Converts Redis errors into [`FormaError`] values.
 pub trait FormaErrorRedisExt<T> {
     /// Maps a Redis error to a public kind and message.
-    ///
-    /// # Arguments
-    /// * `kind` - Public error category.
-    /// * `message` - Message exposed to the caller.
-    ///
-    /// # Returns
-    /// The original success value or a converted [`FormaError`].
     fn map_redis_forma_err<K: Into<FormaErrorKind>>(
         self,
         kind: K,
         message: &str,
     ) -> Result<T, FormaError>;
     /// Maps a Redis error and attaches optional structured details.
-    ///
-    /// # Arguments
-    /// * `kind` - Public error category.
-    /// * `message` - Message exposed to the caller.
-    /// * `detail` - Optional structured error detail.
-    ///
-    /// # Returns
-    /// The original success value or a converted [`FormaError`].
     fn map_redis_forma_err_with_detail<K: Into<FormaErrorKind>>(
         self,
         kind: K,
@@ -813,27 +623,12 @@ impl<T> FormaErrorRedisExt<T> for Result<T, redis::RedisError> {
 /// Converts Reqwest errors into [`FormaError`] values.
 pub trait FormaErrorReqwestExt<T> {
     /// Maps a Reqwest error to a public kind and message.
-    ///
-    /// # Arguments
-    /// * `kind` - Public error category.
-    /// * `message` - Message exposed to the caller.
-    ///
-    /// # Returns
-    /// The original success value or a converted [`FormaError`].
     fn map_reqwest_forma_err<K: Into<FormaErrorKind>>(
         self,
         kind: K,
         message: &str,
     ) -> Result<T, FormaError>;
     /// Maps a Reqwest error and attaches optional structured details.
-    ///
-    /// # Arguments
-    /// * `kind` - Public error category.
-    /// * `message` - Message exposed to the caller.
-    /// * `detail` - Optional structured error detail.
-    ///
-    /// # Returns
-    /// The original success value or a converted [`FormaError`].
     fn map_reqwest_forma_err_with_detail<K: Into<FormaErrorKind>>(
         self,
         kind: K,
@@ -876,27 +671,12 @@ impl<T> FormaErrorReqwestExt<T> for Result<T, reqwest::Error> {
 /// Converts SurrealDB errors into [`FormaError`] values.
 pub trait FormaErrorSurrealExt<T> {
     /// Maps a SurrealDB error to a public kind and message.
-    ///
-    /// # Arguments
-    /// * `kind` - Public error category.
-    /// * `message` - Message exposed to the caller.
-    ///
-    /// # Returns
-    /// The original success value or a converted [`FormaError`].
     fn map_surreal_forma_err<K: Into<FormaErrorKind>>(
         self,
         kind: K,
         message: &str,
     ) -> Result<T, FormaError>;
     /// Maps a SurrealDB error and attaches optional structured details.
-    ///
-    /// # Arguments
-    /// * `kind` - Public error category.
-    /// * `message` - Message exposed to the caller.
-    /// * `detail` - Optional structured error detail.
-    ///
-    /// # Returns
-    /// The original success value or a converted [`FormaError`].
     fn map_surreal_forma_err_with_detail<K: Into<FormaErrorKind>>(
         self,
         kind: K,
@@ -1123,12 +903,6 @@ pub enum FormaInternalErrorKind {
 /// Converts a public error kind into its internal counterpart.
 impl From<FormaErrorKind> for FormaInternalErrorKind {
     /// Preserves the category and variant in the internal representation.
-    ///
-    /// # Arguments
-    /// * `kind` - Public error kind to convert.
-    ///
-    /// # Returns
-    /// The matching internal error kind.
     fn from(kind: FormaErrorKind) -> Self {
         match kind {
             FormaErrorKind::OAuthError(error) => Self::OAuthError(error),
@@ -1194,7 +968,7 @@ impl From<FormaErrorCache> for FormaInternalErrorKind {
 #[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 /// Classifies errors exposed by the application.
 pub enum FormaErrorKind {
-    #[error("oauth error :: {0}")]
+    #[error("OAuth error :: {0}")]
     /// OAuth provider or protocol failure.
     OAuthError(#[from] FormaErrorOAuth),
     #[error("database error :: {0}")]
@@ -1206,7 +980,7 @@ pub enum FormaErrorKind {
     #[error("app error :: {0}")]
     /// Application or input failure.
     FormaError(#[from] FormaErrorApp),
-    #[error("external serice error :: {0}")]
+    #[error("external service error :: {0}")]
     /// External-service failure.
     ExternalServiceError(#[from] FormaErrorExternalService),
     #[error("cache error :: {0}")]
@@ -1316,7 +1090,7 @@ pub enum FormaErrorDatabase {
 #[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 /// Errors raised while calling an external service.
 pub enum FormaErrorExternalService {
-    #[error("url error")]
+    #[error("URL error")]
     /// An external-service URL is invalid.
     UrlError,
     #[error("pool error")]
