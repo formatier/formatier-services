@@ -2,13 +2,11 @@
 //! Marker types distinguish new models from persisted models.
 use std::marker::PhantomData;
 
-use chrono::{DateTime, Utc};
 use mongodb::bson::{self, oid};
-use serde::{Deserialize, Serialize, de::{Visitor}};
-use surrealdb::types::{RecordId, SurrealValue, Value};
+use serde::{Deserialize, Serialize};
 
 use crate::domain::entities::{
-    Created, FormaError, FormaErrorApp, FormaErrorConverter, FormaErrorDatabase, Saved,
+    Created, FormaError, FormaErrorConverter, FormaErrorDatabase, Saved,
 };
 
 /// Represents a MongoDB document whose identifier presence is tracked by `S`.

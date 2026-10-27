@@ -1,7 +1,6 @@
 //! SurrealDB record models and value conversion helpers.
 //! SurrealDB table models and conversion helpers.
-use rustls::crypto::hash::Hash;
-use std::{collections::HashMap, marker::PhantomData};
+use std::marker::PhantomData;
 use surrealdb::types::{Error as SurrealError, Kind, RecordId, SurrealValue, Value};
 
 use crate::domain::entities::{Created, Saved, TableState};

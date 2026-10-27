@@ -1,1 +1,0 @@
-SELECT VALUE account.* FROM ONLY $provider_key;

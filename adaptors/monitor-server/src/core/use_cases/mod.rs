@@ -1,6 +1,4 @@
 //! Monitoring service use cases.
-pub struct UseCases { }
+pub struct UseCases {}
 
-impl UseCases {
-    
-}
+impl UseCases {}

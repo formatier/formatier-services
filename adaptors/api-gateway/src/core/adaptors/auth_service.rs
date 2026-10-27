@@ -1,7 +1,7 @@
 //! HTTP client adapter for the authentication service.
 use std::collections::HashMap;
 
-use forma_core::domain::entities::{FormaErrorConverter, FormaErrorExternalService};
+use forma_core::domain::entities::{FormaError, FormaErrorConverter, FormaErrorExternalService};
 use url::Url;
 
 use crate::{
@@ -13,17 +13,16 @@ use crate::{
 };
 
 /// Builds an upstream URL from its configured scheme, host, and port.
-fn get_url(upstream: &HashMap<UpstreamKey, Upstream>, key: UpstreamKey) -> Url {
-    let upstream = upstream.get(&key).unwrap();
+fn get_url(upstream: &HashMap<UpstreamKey, Upstream>, key: UpstreamKey) -> Result<Url, FormaError> {
+    let upstream = upstream.get(&key).ok_or(FormaError::new(
+        FormaErrorExternalService::UrlError,
+        "authentication service upstream is not configured",
+    ))?;
     let url = format!(
         "{}://{}:{}",
         &upstream.scheme, &upstream.domain, &upstream.port
     );
-    let url = Url::parse(&url)
-        .map_forma_err(FormaErrorExternalService::UrlError, "Could not parse URL")
-        .unwrap();
-
-    url
+    Url::parse(&url).map_forma_err(FormaErrorExternalService::UrlError, "Could not parse URL")
 }
 
 /// Provides HTTP access to configured upstream services.
@@ -35,12 +34,15 @@ pub struct ServiceAdaptor {
 
 impl ServiceAdaptor {
     /// Creates the adapter and resolves the authentication service URL.
-    pub fn new(client: reqwest::Client, upstream: &HashMap<UpstreamKey, Upstream>) -> Self {
-        let auth_service_url = get_url(&upstream, UpstreamKey::AuthService);
-        Self {
+    pub fn new(
+        client: reqwest::Client,
+        upstream: &HashMap<UpstreamKey, Upstream>,
+    ) -> Result<Self, FormaError> {
+        let auth_service_url = get_url(upstream, UpstreamKey::AuthService)?;
+        Ok(Self {
             client,
             auth_service_url,
-        }
+        })
     }
 }
 

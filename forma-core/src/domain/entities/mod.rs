@@ -61,6 +61,14 @@ impl<'de> Visitor<'de> for ChronoTime {
             .ok_or(E::invalid_length(i32::MAX as usize, &self))
     }
 
+    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        let timestamp = i64::try_from(v).map_err(E::custom)?;
+        self.visit_i64(timestamp)
+    }
+
     /// Describes the value expected by this visitor.
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(formatter, "cannot parse timestamp")
@@ -1152,5 +1160,14 @@ mod tests {
             error.kind,
             FormaErrorKind::DatabaseError(FormaErrorDatabase::SelectError)
         );
+    }
+
+    #[test]
+    fn deserializes_millisecond_timestamps_from_unsigned_json_numbers() {
+        let value = serde_json::json!(Utc::now().timestamp_millis() as u64);
+        let timestamp: Timestamp<ChronoTime> = serde_json::from_value(value).unwrap();
+        let parsed: DateTime<Utc> = timestamp.into();
+
+        assert!(parsed.timestamp_millis() > 0);
     }
 }

@@ -3,6 +3,7 @@ use auth_service::domain::entities::AppAuthenticateV1Reply;
 use axum::{
     Json,
     extract::{Request, State},
+    http::{HeaderMap, HeaderValue, header::AUTHORIZATION},
     middleware::Next,
     response::{IntoResponse, Response},
 };
@@ -12,6 +13,23 @@ use reqwest::StatusCode;
 use std::sync::Arc;
 
 use crate::domain::{blueprints::ServiceBlueprint, entities::AuthStrategy};
+
+// TODO: Move to utils
+fn extract_access_token(headers: &HeaderMap) -> Option<&str> {
+    let header = headers
+        .get(AUTHORIZATION)
+        .or_else(|| headers.get("Authentication"))?;
+    let mut parts = header.to_str().ok()?.split_ascii_whitespace();
+    let scheme = parts.next()?;
+    let token = parts.next()?;
+
+    (scheme.eq_ignore_ascii_case("Bearer") && parts.next().is_none()).then_some(token)
+}
+
+fn remove_untrusted_identity_headers(headers: &mut HeaderMap) {
+    headers.remove("X-Account-Id");
+    headers.remove("X-User-Id");
+}
 
 /// Holds adapters shared by API gateway handlers.
 pub struct AxumDriver {
@@ -52,34 +70,13 @@ pub async fn auth_middleware(
     mut req: Request,
     next: Next,
 ) -> Response {
-    let access_token: Option<&str> = {
-        let header = req.headers().get("Authentication");
-        let access_token = header
-            .map(|v| v.to_str().ok())
-            .flatten()
-            .map(|v| {
-                let splitted: Vec<&str> = v.split(" ").collect();
-                if splitted.len() != 2 {
-                    return None;
-                } else {
-                    let auth_type = splitted.get(0).unwrap();
-                    if *auth_type == "Barea" {
-                        let access_token = splitted.get(1).unwrap();
-                        return Some(*access_token);
-                    } else {
-                        return None;
-                    }
-                }
-            })
-            .flatten();
-
-        access_token
-    };
+    let access_token = extract_access_token(req.headers()).map(str::to_owned);
+    remove_untrusted_identity_headers(req.headers_mut());
     if let Some(access_token) = access_token {
         let repl = state
             .state
             .service_adapter
-            .app_authenticate_v1(access_token)
+            .app_authenticate_v1(&access_token)
             .await;
 
         match repl {
@@ -88,22 +85,35 @@ pub async fn auth_middleware(
                 user_id,
             }) => {
                 let headers = req.headers_mut();
-                let account_id = account_id.parse();
-                let user_id = user_id.parse();
+                let account_id = match HeaderValue::from_str(&account_id) {
+                    Ok(value) => value,
+                    Err(_) => {
+                        return (
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            Json(FormaError::new(
+                                FormaErrorKind::Unhandled,
+                                "Could not parse account_id as a HeaderValue in the API gateway",
+                            )),
+                        )
+                            .into_response();
+                    }
+                };
+                let user_id = match HeaderValue::from_str(&user_id) {
+                    Ok(value) => value,
+                    Err(_) => {
+                        return (
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            Json(FormaError::new(
+                                FormaErrorKind::Unhandled,
+                                "Could not parse user_id as a HeaderValue in the API gateway",
+                            )),
+                        )
+                            .into_response();
+                    }
+                };
 
-                if account_id.is_err() || user_id.is_err() {
-                    return (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        Json(FormaError::new(
-                            FormaErrorKind::Unhandled,
-                            "Could not parse account_id or user_id as a HeaderValue in the API gateway",
-                        )),
-                    )
-                        .into_response();
-                }
-
-                headers.insert("X-Account-Id", account_id.unwrap());
-                headers.insert("X-User-Id", user_id.unwrap());
+                headers.insert("X-Account-Id", account_id);
+                headers.insert("X-User-Id", user_id);
             }
             Err(err) => {
                 return (err.get_status(), Json(err)).into_response();
@@ -126,4 +136,48 @@ pub async fn auth_middleware(
     }
 
     next.run(req).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn extracts_standard_bearer_authorization() {
+        let headers = HeaderMap::from_iter([(
+            AUTHORIZATION,
+            HeaderValue::from_static("Bearer access-token"),
+        )]);
+        assert_eq!(extract_access_token(&headers), Some("access-token"));
+    }
+
+    #[test]
+    fn accepts_legacy_authentication_header() {
+        let headers = HeaderMap::from_iter([(
+            axum::http::HeaderName::from_static("authentication"),
+            HeaderValue::from_static("Bearer access-token"),
+        )]);
+        assert_eq!(extract_access_token(&headers), Some("access-token"));
+    }
+
+    #[test]
+    fn rejects_invalid_bearer_headers() {
+        for value in ["Barea token", "Basic token", "Bearer", "Bearer one two"] {
+            let headers =
+                HeaderMap::from_iter([(AUTHORIZATION, HeaderValue::from_str(value).unwrap())]);
+            assert_eq!(extract_access_token(&headers), None);
+        }
+    }
+
+    #[test]
+    fn removes_client_supplied_identity_headers() {
+        let mut headers = HeaderMap::new();
+        headers.insert("X-Account-Id", HeaderValue::from_static("untrusted"));
+        headers.insert("X-User-Id", HeaderValue::from_static("untrusted"));
+
+        remove_untrusted_identity_headers(&mut headers);
+
+        assert!(!headers.contains_key("X-Account-Id"));
+        assert!(!headers.contains_key("X-User-Id"));
+    }
 }

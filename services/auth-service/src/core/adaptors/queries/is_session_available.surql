@@ -1,1 +1,1 @@
-RETURN record::record::exists($session_key)
+RETURN record::exists($session_key)

@@ -37,6 +37,7 @@ pub trait AccountRepositoryBlueprint {
     /// Retrieves an account by an associated OAuth identity.
     async fn get_account_by_oauth_provider(
         &self,
+        provider: ProviderIdent,
         provider_id: &str,
     ) -> Result<Option<AccountTable<Saved>>, FormaError>;
 
@@ -65,7 +66,7 @@ pub trait AccountRepositoryBlueprint {
     async fn hard_delete_oauth_provider(
         &self,
         account_id: &str,
-        provider: Provider,
+        provider: ProviderIdent,
     ) -> Result<(), FormaError>;
 
     //async fn delete_account(&self, account_id: &str) -> Result<(), FormaError>;
@@ -83,8 +84,15 @@ pub trait TokenRepositoryBlueprint {
     /// Checks whether a session exists in persistence.
     async fn is_session_available(&self, session_id: &str) -> Result<bool, FormaError>;
 
-    /// Updates a session's refresh timestamp.
-    async fn refresh_session(&self, session_id: &str) -> Result<(), FormaError>;
+    /// Retrieves a session by identifier.
+    async fn get_session(&self, session_id: &str) -> Result<SessionTable<Saved>, FormaError>;
+
+    /// Atomically advances the refresh-token generation.
+    async fn rotate_refresh_token(
+        &self,
+        session_id: &str,
+        expected_version: u64,
+    ) -> Result<bool, FormaError>;
 
     /// Retrieves all saved sessions owned by an account.
     async fn get_sessions(

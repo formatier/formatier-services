@@ -1,9 +1,7 @@
 //! Helpers for loading API gateway configuration.
 use std::{fs, io::Read};
 
-use forma_core::domain::entities::{
-    FormaError, FormaErrorConverter, FormaErrorKind,
-};
+use forma_core::domain::entities::{FormaError, FormaErrorConverter, FormaErrorKind};
 
 use crate::domain::entities::Config;
 

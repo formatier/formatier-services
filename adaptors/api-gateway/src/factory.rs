@@ -1,16 +1,20 @@
 //! Builds the API gateway router from its route configuration.
 use crate::{
-    core::drivers::{self, AuthMiddlewareState, AxumDriver, auth_middleware}, domain::entities::{AuthStrategy, Config},
+    core::drivers::{self, AuthMiddlewareState, AxumDriver, auth_middleware},
+    domain::entities::{AuthStrategy, Config},
 };
 use axum::{
-    Router, http::{HeaderName, HeaderValue}, middleware, routing::get,
+    Router,
+    http::{HeaderName, HeaderValue},
+    middleware,
+    routing::get,
 };
 use axum_reverse_proxy::{ProxyRouterExt, proxy_template};
 use forma_core::domain::{
     TryCollectExt,
     entities::{FormaError, FormaErrorApp, FormaErrorConverter, FormaOptionConverter},
 };
-use reqwest::{Method};
+use reqwest::Method;
 use std::{collections::HashMap, sync::Arc};
 use tower_http::cors::CorsLayer;
 
@@ -99,7 +103,7 @@ pub fn build_api_route_v1(
         app = app.merge(router);
     }
 
-   app = app.route("/cookies", get(drivers::get_cookies));
+    app = app.route("/cookies", get(drivers::get_cookies));
 
     return Ok(app);
 }

@@ -1,11 +1,8 @@
 //! Contracts for communicating with upstream services.
 use auth_service::domain::entities::{AppAuthenticateV1Reply, AppAuthenticateV1Request};
-use forma_core::{
-    domain::entities::{
-        FormaError, FormaErrorApp, FormaErrorConverter, FormaErrorExt, FormaErrorExternalService,
-        FormaErrorReqwestExt, Request, ResultReply,
-    },
-    inline_mod,
+use forma_core::domain::entities::{
+    FormaError, FormaErrorApp, FormaErrorConverter, FormaErrorExt, FormaErrorExternalService,
+    FormaErrorReqwestExt, Request, ResultReply,
 };
 use url::Url;
 

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize)]
-#[serde(tag = "kind")]
+#[serde(tag = "kind", content = "data")]
 /// Represents a successful response or a serialized application error.
 pub enum ResultReply<T> {
     /// Carries the successful response value.
