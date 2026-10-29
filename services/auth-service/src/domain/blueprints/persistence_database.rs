@@ -37,7 +37,6 @@ pub trait AccountRepositoryBlueprint {
     /// Retrieves an account by an associated OAuth identity.
     async fn get_account_by_oauth_provider(
         &self,
-        provider: ProviderIdent,
         provider_id: &str,
     ) -> Result<Option<AccountTable<Saved>>, FormaError>;
 

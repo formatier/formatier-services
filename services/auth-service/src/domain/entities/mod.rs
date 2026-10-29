@@ -37,6 +37,7 @@ pub struct Account {
     /// Optional account display name.
     pub user_name: Option<String>,
     /// Optional password credential.
+    #[serde(skip)]
     pub password: Option<String>,
 }
 
@@ -61,8 +62,6 @@ pub enum ProviderIdent {
 #[surreal(tag = "type", rename_all = "lowercase")]
 /// Stores the provider-specific identifier linked to an account.
 pub struct Provider {
-    /// Identifies an external OAuth provider.
-    pub provider: ProviderIdent,
     /// Email verification status.
     pub email_verified: bool,
     /// Provider email that user has.

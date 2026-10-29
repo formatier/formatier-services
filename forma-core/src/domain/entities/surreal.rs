@@ -1,9 +1,9 @@
 //! SurrealDB record models and value conversion helpers.
 //! SurrealDB table models and conversion helpers.
 use std::marker::PhantomData;
-use surrealdb::types::{Error as SurrealError, Kind, RecordId, SurrealValue, Value};
+use surrealdb::types::{Error as SurrealError, Kind, RecordId, SurrealValue, ToSql, Value};
 
-use crate::domain::entities::{Created, Saved, TableState};
+use crate::domain::entities::{Created, FormaError, FormaErrorDatabase, Saved, TableState};
 
 /// SurrealDB value representation for a table and its flattened fields.
 #[derive(SurrealValue)]
@@ -209,4 +209,24 @@ where
     #[surreal(flatten)]
     /// Metadata associated with the table.
     pub metadata: M,
+}
+
+pub trait RecordIdExt {
+    fn from_sql(sql: &str) -> Result<Self, FormaError>
+    where
+        Self: Sized;
+}
+
+impl RecordIdExt for RecordId {
+    fn from_sql(sql: &str) -> Result<Self, FormaError>
+    where
+        Self: Sized,
+    {
+        Self::parse_simple(sql).map_err(|_| {
+            FormaError::new(
+                FormaErrorDatabase::InvalidObjectId,
+                "fail to parse sql record id to RecordId",
+            )
+        })
+    }
 }

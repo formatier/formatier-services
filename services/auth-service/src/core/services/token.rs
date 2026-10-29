@@ -1,22 +1,15 @@
 //! JWT issuance, parsing, and session-token lifecycle services.
+
 use std::sync::Arc;
 
-use crate::domain::entities::{
-    AccessTokenClaims, Audience, InitializationTokenClaims, Issuer,
-    RefreshTokenClaims, SessionTablePairs, TokenClaims,
-};
 use chrono::{DateTime, TimeDelta, Utc};
-use forma_core::domain::entities::{FormaError, FormaErrorAuth, FormaErrorConverter, SavedModel};
+use forma_core::domain::entities::{FormaError, FormaErrorAuth, FormaErrorConverter, RecordIdExt, SavedTable};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use surrealdb::types::{RecordId, ToSql};
 
-use crate::{
-    domain::{
-        blueprints::{TokenCacheBlueprint, TokenRepositoryBlueprint},
-        entities::TokenType,
-    },
-    value_objects,
-};
+use crate::{domain::{blueprints::{TokenCacheBlueprint, TokenRepositoryBlueprint}, entities::{AccessTokenClaims, Audience, InitializationTokenClaims, Issuer, RefreshTokenClaims, Session, SessionMetadata, SessionTablePairs, TokenClaims, TokenType}}, value_objects};
+
 
 /// Coordinates token creation and session state across persistence and cache layers.
 pub struct TokenService {
@@ -89,28 +82,29 @@ impl TokenService {
     pub async fn create_session(
         &self,
         account_id: &str,
-        user_agent: LatestSession,
-    ) -> Result<ObjectId, FormaError> {
-        let session_metadata = self
-            .token_repository
-            .create_session_metadata(account_id)
-            .await?;
+        user_agent: Session,
+    ) -> Result<String, FormaError> {
+        let account_id = RecordId::from_sql(account_id)?;
         let session = self
             .token_repository
             .create_session(
-                SessionModelPairs {
+                SessionTablePairs {
                     data: user_agent.into(),
-                    metadata: session_metadata,
+                    metadata: SessionMetadata{
+                        account: account_id,
+                        create_at: Default::default(),
+                        update_at: Default::default()
+                    },
                 }
                 .into(),
             )
             .await?;
 
         self.token_cache
-            .create_token_data(&session.id().to_hex())
+            .create_token_data(&session.id().to_sql())
             .await?;
 
-        Ok(session.id())
+        Ok(session.id().to_sql())
     }
 
     /// Issues access and refresh JWTs for a session.
@@ -186,7 +180,7 @@ impl TokenService {
     }
 
     /// Parses a token and reports whether its expiration time has passed.
-    pub async fn parse_token<T: for<'de> Deserialize<'de>>(
+    pub async fn parse_token<T: DeserializeOwned>(
         &self,
         token: &str,
         typ: TokenType,
@@ -223,7 +217,7 @@ impl TokenService {
 
     /// Refreshes a session and reinitializes its token-cache entry.
     pub async fn refresh_tokens(&self, session_id: &str) -> Result<(), FormaError> {
-        self.token_repository.refresh_session(session_id).await?;
+        self.token_repository.rotate_refresh_token(session_id).await?;
         self.token_cache.create_token_data(session_id).await?;
         Ok(())
     }

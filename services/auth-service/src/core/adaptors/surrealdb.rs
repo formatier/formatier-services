@@ -6,29 +6,24 @@ use forma_core::domain::entities::{
 };
 use std::{borrow::Cow, collections::HashMap, marker::PhantomData, str::FromStr};
 use surrealdb::{
+    Connection, Surreal,
     method::{Create, Delete, Insert, Query, Select, Transaction, Update, Upsert},
     opt::{CreateResource, IntoResource},
-    types::{self, vars, RecordId, SurrealValue},
-    Connection, Surreal,
+    types::{self, RecordId, SurrealValue, vars},
 };
 
-use crate::domain::{
-    blueprints::{AccountRepositoryBlueprint, TokenCacheBlueprint, TokenRepositoryBlueprint},
-    entities::{AccountTable, AccountUpdaterFilter, ProviderIdent, SessionTable, UserTable},
+use crate::{
+    domain::{
+        blueprints::{AccountRepositoryBlueprint, TokenCacheBlueprint, TokenRepositoryBlueprint},
+        entities::{AccountTable, AccountUpdaterFilter, ProviderIdent, SessionTable, UserTable},
+    },
+    utils::parse_uuid,
 };
 
 macro_rules! use_query {
     ($name:literal) => {
         include_str!(concat!("./queries/", $name, ".surql"))
     };
-}
-
-fn provider_record_key(provider: ProviderIdent, provider_id: &str) -> String {
-    let provider = match provider {
-        ProviderIdent::Google => "google",
-        ProviderIdent::Github => "github",
-    };
-    format!("{provider}:{provider_id}")
 }
 
 #[derive(SurrealValue)]
@@ -41,99 +36,12 @@ struct ProviderLookup {
     account: RecordId,
 }
 
-fn to_account_id(account_id: &str) -> Result<types::Uuid, FormaError> {
-    types::Uuid::from_str(account_id)
-        .map_forma_err(FormaErrorDatabase::InvalidObjectId, "failed to parse ID")
-}
-
-fn to_user_id(account_id: &str) -> Result<types::Uuid, FormaError> {
-    types::Uuid::from_str(account_id)
-        .map_forma_err(FormaErrorDatabase::InvalidObjectId, "failed to parse ID")
-}
-
-fn to_session_id(account_id: &str) -> Result<types::Uuid, FormaError> {
-    types::Uuid::from_str(account_id)
-        .map_forma_err(FormaErrorDatabase::InvalidObjectId, "failed to parse ID")
-}
-
 /// Provides SurrealDB operations through an abstract executor.
 pub struct SurrealdbAdaptor<E, C> {
     /// Executor used for database operations.
     executor: E,
     /// Connection type associated with the executor.
     _conn: PhantomData<C>,
-}
-
-/// Stores token-cache entries in SurrealDB for local and in-memory deployments.
-pub struct SurrealTokenCacheAdaptor<C: Connection> {
-    database: Surreal<C>,
-}
-
-impl<C: Connection> SurrealTokenCacheAdaptor<C> {
-    /// Creates a token-cache adapter using a SurrealDB connection.
-    pub fn new(database: Surreal<C>) -> Self {
-        Self { database }
-    }
-}
-
-#[async_trait]
-impl<C> TokenCacheBlueprint for SurrealTokenCacheAdaptor<C>
-where
-    C: Connection,
-{
-    async fn create_token_data(&self, session_id: &str) -> Result<(), FormaError> {
-        let session_id = to_session_id(session_id)?;
-        let _ret = self.database
-            .query("UPSERT $cache_key SET active = true")
-            .bind(vars! {
-                cache_key: RecordId::new("token_cache", session_id)
-            })
-            .await
-            .map(|v| v.check())
-            .flatten()
-            .map_surreal_forma_err(
-                FormaErrorDatabase::InsertError,
-                "failed to create a token-cache entry",
-            )?;
-        Ok(())
-    }
-
-    async fn is_token_available(&self, session_id: &str) -> Result<bool, FormaError> {
-        let session_id = to_session_id(session_id)?;
-        let available: Option<bool> = self
-            .database
-            .query("RETURN record::exists($cache_key)")
-            .bind(vars! {
-                cache_key: RecordId::new("token_cache", session_id)
-            })
-            .await
-            .map(|v| v.check())
-            .flatten()
-            .map(|mut v| v.take(0))
-            .flatten()
-            .map_surreal_forma_err(
-                FormaErrorDatabase::SelectError,
-                "failed to check a token-cache entry",
-            )?;
-        Ok(available.unwrap_or_default())
-    }
-
-    async fn remove_token(&self, session_id: &str) -> Result<(), FormaError> {
-        let session_id = to_session_id(session_id)?;
-        self.database
-            .query("DELETE $cache_key")
-            .bind(vars! {
-                cache_key: RecordId::new("token_cache", session_id)
-            })
-            .await
-            .map(|v| v.check())
-            .flatten()
-            .map_surreal_forma_err(
-                FormaErrorDatabase::DeleteError,
-                "failed to remove a token-cache entry",
-            )?;
-        Ok(())
-    }
 }
 
 impl<E, C> SurrealdbAdaptor<E, C>
@@ -198,7 +106,7 @@ where
         provider_id: &str,
         provider_email: &str,
     ) -> Result<(), FormaError> {
-        let account_id = to_account_id(account_id)?;
+        let account_id = parse_uuid(account_id)?;
         let _ret = self
             .executor
             .query(use_query!("add_oauth_provider"))
@@ -207,7 +115,7 @@ where
                 provider: provider,
                 provider_key: RecordId::new(
                     "provider",
-                    provider_record_key(provider, provider_id),
+                    provider_id,
                 ),
                 email: provider_email
             })
@@ -229,7 +137,7 @@ where
         &self,
         account_id: &str,
     ) -> Result<Option<AccountTable<Saved>>, FormaError> {
-        let account_id = to_account_id(account_id)?;
+        let account_id = parse_uuid(account_id)?;
         let ret = self
             .executor
             .select(RecordId::new("account", account_id))
@@ -245,15 +153,11 @@ where
     /// Retrieves an account by its provider identity.
     async fn get_account_by_oauth_provider(
         &self,
-        provider: ProviderIdent,
         provider_id: &str,
     ) -> Result<Option<AccountTable<Saved>>, FormaError> {
         let provider_record: Option<ProviderLookup> = self
             .executor
-            .select(RecordId::new(
-                "provider",
-                provider_record_key(provider, provider_id),
-            ))
+            .select(RecordId::new("provider", provider_id))
             .await
             .map_surreal_forma_err(
                 FormaErrorDatabase::SelectError,
@@ -261,15 +165,14 @@ where
             )?;
         let provider_record = match provider_record {
             Some(provider_record) => Some(provider_record),
-            None => {
-                self.executor
-                    .select(RecordId::new("provider", provider_id))
-                    .await
-                    .map_surreal_forma_err(
-                        FormaErrorDatabase::SelectError,
-                        "failed to find an account with the legacy OAuth provider ID",
-                    )?
-            }
+            None => self
+                .executor
+                .select(RecordId::new("provider", provider_id))
+                .await
+                .map_surreal_forma_err(
+                    FormaErrorDatabase::SelectError,
+                    "failed to find an account with the legacy OAuth provider ID",
+                )?,
         };
 
         match provider_record {
@@ -291,7 +194,7 @@ where
         account_id: &str,
         new_data: HashMap<String, String>,
     ) -> Result<(), FormaError> {
-        let account_id = to_account_id(account_id)?;
+        let account_id = parse_uuid(account_id)?;
         let new_data: HashMap<_, _> =
             AccountUpdaterFilter::filter_iter(new_data.into_iter()).collect();
 
@@ -319,7 +222,7 @@ where
         account_id: &str,
         user: UserTable<Created>,
     ) -> Result<UserTable<Saved>, FormaError> {
-        let account_id = to_account_id(account_id)?;
+        let account_id = parse_uuid(account_id)?;
         let user_id = types::Uuid::new_v7();
         let user_key = RecordId::new("user", user_id);
 
@@ -347,7 +250,7 @@ where
 
     /// Retrieves a user by identifier.
     async fn get_user(&self, user_id: &str) -> Result<UserTable<Saved>, FormaError> {
-        let user_id = to_user_id(user_id)?;
+        let user_id = parse_uuid(user_id)?;
         let ret = self
             .executor
             .select(RecordId::new("user", user_id))
@@ -368,7 +271,7 @@ where
         account_id: &str,
         provider: ProviderIdent,
     ) -> Result<(), FormaError> {
-        let account_id = to_account_id(account_id)?;
+        let account_id = parse_uuid(account_id)?;
         let _ret = self
             .executor
             .query(use_query!("hard_delete_oauth_provider"))
@@ -418,7 +321,7 @@ where
 
     /// Checks whether a session exists in persistence.
     async fn is_session_available(&self, session_id: &str) -> Result<bool, FormaError> {
-        let session_id = to_session_id(session_id)?;
+        let session_id = parse_uuid(session_id)?;
         let ret: Option<bool> = self
             .executor
             .query(use_query!("is_session_available"))
@@ -437,7 +340,7 @@ where
 
     /// Retrieves a session by identifier.
     async fn get_session(&self, session_id: &str) -> Result<SessionTable<Saved>, FormaError> {
-        let session_id = to_session_id(session_id)?;
+        let session_id = parse_uuid(session_id)?;
         self.executor
             .select(RecordId::new("session", session_id))
             .await
@@ -454,7 +357,7 @@ where
         session_id: &str,
         expected_version: u64,
     ) -> Result<bool, FormaError> {
-        let session_id = to_session_id(session_id)?;
+        let session_id = parse_uuid(session_id)?;
         let ret: Option<SessionTable<Saved>> = self
             .executor
             .query(use_query!("rotate_refresh_token"))
@@ -477,7 +380,7 @@ where
         &self,
         account_id: &str,
     ) -> Result<Box<dyn Iterator<Item = SessionTable<Saved>> + Send>, FormaError> {
-        let account_id = to_account_id(account_id)?;
+        let account_id = parse_uuid(account_id)?;
         let ret: Vec<SessionTable<Saved>> = self
             .executor
             .query(use_query!("get_sessions"))
@@ -496,7 +399,7 @@ where
 
     /// Deletes a session from persistence.
     async fn delete_session(&self, session_id: &str) -> Result<(), FormaError> {
-        let session_id = to_session_id(session_id)?;
+        let session_id = parse_uuid(session_id)?;
         let _ret = self
             .executor
             .query(use_query!("delete_session"))
@@ -643,33 +546,5 @@ impl<C: Connection> SurrealExecutor<C> for SurrealTransaction<C> {
     /// Creates a delete builder for a resource.
     fn delete<O>(&self, resource: impl IntoResource<O>) -> Delete<'_, C, O> {
         self.0.delete(resource)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn record_id_helpers_accept_uuid_values() {
-        let id = types::Uuid::new_v4();
-        assert_eq!(to_account_id(&id.to_string()).unwrap(), id);
-        assert_eq!(to_user_id(&id.to_string()).unwrap(), id);
-        assert_eq!(to_session_id(&id.to_string()).unwrap(), id);
-    }
-
-    #[test]
-    fn record_id_helpers_reject_malformed_values() {
-        assert!(to_account_id("not-a-uuid").is_err());
-        assert!(to_user_id("not-a-uuid").is_err());
-        assert!(to_session_id("not-a-uuid").is_err());
-    }
-
-    #[test]
-    fn provider_ids_are_scoped_to_their_provider() {
-        assert_ne!(
-            provider_record_key(ProviderIdent::Google, "same-id"),
-            provider_record_key(ProviderIdent::Github, "same-id")
-        );
     }
 }
